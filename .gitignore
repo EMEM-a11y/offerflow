@@ -1,0 +1,30 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+/tmp/
+/work/
+/private/
+/data/private/
+# Local release notes contain personal migration details.
+/docs/RELEASE_STATUS.md
+*.csv
+*.xlsx
+*.xls
+*.tgz
+*.zip
+*.pdf
+*.docx
+*.m4a
+*.mp3
+*.wav
+.DS_Store
+public/data/*.tmp
+# Disabled legacy banks are not part of the public release.
+/src/public-question-bank.js
+/src/generated-graphic-bank.js
+/src/data-chart-bank.js
+/public/question-images/generated-graphic/
+/public/question-images/data-charts/
+/public/question-images/github-*

@@ -1,0 +1,17 @@
+{
+  "questions": [
+    {
+      "id": "my-bank-001",
+      "paperId": "my-bank",
+      "source": "我的题库",
+      "category": "logic",
+      "subtype": "条件推理",
+      "difficulty": 3,
+      "prompt": "这里填写题干",
+      "options": ["选项 A", "选项 B", "选项 C", "选项 D"],
+      "answer": 0,
+      "explanation": "这里填写解析。answer 从 0 开始，0 表示 A。",
+      "expectedSeconds": 60
+    }
+  ]
+}

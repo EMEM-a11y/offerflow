@@ -1,0 +1,414 @@
+import { assetUrl } from "./asset-url.js";
+
+export const JOB_SOURCES = [
+  {
+    id: "xiaozhao-radar",
+    name: "校招雷达公开聚合",
+    url: assetUrl("data/campus-jobs-snapshot.json"),
+    homepage: "https://github.com/jiabaobei/xiaozhao-radar",
+    cadence: "内置快照 · 2026-09-03",
+    license: "Apache-2.0"
+  },
+  {
+    id: "xixicc2027",
+    name: "2027 届秋招信息汇总",
+    url: assetUrl("data/radar-updates.json"),
+    homepage: "https://github.com/xixicc186/xixicc2027",
+    cadence: "定时检查快照 · 以最近成功更新时间为准",
+    license: "公开数据源"
+  }
+];
+
+export const INDUSTRY_GROUPS = [
+  "互联网/科技",
+  "半导体/硬件",
+  "金融",
+  "消费/零售",
+  "汽车/新能源",
+  "制造/能源",
+  "央国企/公共部门",
+  "其他"
+];
+
+export const FALLBACK_RADAR_JOBS = [
+  {
+    id: "fallback-baidu-2027",
+    company: "百度",
+    role: "技术类、产品类、专业服务和管理支持类、政企行业解决方案和服务类",
+    positions: ["产品类", "技术类", "专业服务和管理支持类"],
+    location: "北京 / 上海 / 广州 / 深圳",
+    locations: ["北京", "上海", "广州", "深圳"],
+    industry: "互联网/科技",
+    cohort: "2027届",
+    batch: "正式批",
+    program: "2027 届校园招聘",
+    deadline: "招满即止",
+    applyUrl: "",
+    sourceId: "fallback",
+    sourceName: "离线示例",
+    sourceNames: ["离线示例"],
+    firstSeen: "2026-09-01",
+    lastSeen: "2026-09-05",
+    confirmedBy: 1
+  },
+  {
+    id: "fallback-sasac-2027",
+    company: "中国航天科工",
+    role: "研发、项目管理、职能管理",
+    positions: ["项目管理", "研发", "职能管理"],
+    location: "全国",
+    locations: ["全国"],
+    industry: "央国企/公共部门",
+    cohort: "2027届",
+    batch: "正式批",
+    program: "2027 届秋季招聘",
+    deadline: "以官网为准",
+    applyUrl: "https://www.sasac.gov.cn/n2588035/n2588325/n2588350/index.html",
+    sourceId: "fallback",
+    sourceName: "离线示例",
+    sourceNames: ["离线示例"],
+    firstSeen: "2026-09-02",
+    lastSeen: "2026-09-05",
+    confirmedBy: 1
+  },
+  {
+    id: "fallback-xpeng-2027",
+    company: "小鹏汽车",
+    role: "智能研发类、汽车研发类、测试类、芯片类、产品运营类",
+    positions: ["产品运营类", "智能研发类", "汽车研发类"],
+    location: "广州 / 深圳 / 上海 / 北京",
+    locations: ["广州", "深圳", "上海", "北京"],
+    industry: "汽车/新能源",
+    cohort: "2027届",
+    batch: "正式批",
+    program: "探索者计划",
+    deadline: "招满即止",
+    applyUrl: "https://xiaopeng.jobs.feishu.cn/campus/m/",
+    sourceId: "fallback",
+    sourceName: "离线示例",
+    sourceNames: ["离线示例"],
+    firstSeen: "2026-08-29",
+    lastSeen: "2026-09-05",
+    confirmedBy: 1
+  }
+];
+
+const OFFICIAL_LINK_POLICIES = [
+  {
+    company: /\u5b57\u8282\u8df3\u52a8|bytedance/i,
+    hosts: [/(^|\.)jobs\.bytedance\.com$/, /(^|\.)seed\.bytedance\.com$/],
+    officialUrl: "https://jobs.bytedance.com/campus/position",
+  },
+  {
+    company: /\u6c90[\u77b3\u7ae5]|moonton/i,
+    hosts: [/(^|\.)moonton\.jobs\.feishu\.cn$/, /(^|\.)cn\.moonton\.com$/],
+    officialUrl: "https://moonton.jobs.feishu.cn/campus",
+  },
+  { company: /\u963f\u91cc|\u6dd8\u5929/, hosts: [/(^|\.)alibaba\.com$/] },
+  { company: /\u4e2d\u82af\u56fd\u9645/, hosts: [/(^|\.)smics\.zhiye\.com$/] },
+  { company: /applovin/i, hosts: [/(^|\.)applovin\.com$/] },
+  { company: /\u5b81\u5fb7\u65f6\u4ee3/, urls: [/mokahr\.com\/campus-recruitment\/catlhr\//] },
+  { company: /\u79be\u8fc8/, urls: [/mokahr\.com\/campus-recruitment\/hoymiles\//] },
+  { company: /4399/, hosts: [/(^|\.)4399om\.com$/] },
+  { company: /\u8c6a\u8fc8/, hosts: [/(^|\.)himile\.zhiye\.com$/] },
+  { company: /\u4e0a\u6c7d/, hosts: [/(^|\.)saicmotor\.com$/] },
+  { company: /\u5e7f\u7535\u8fd0\u901a/, urls: [/mokahr\.com\/campus-recruitment\/grgbanking\//] },
+  { company: /\u664b\u534e\u96c6\u6210\u7535\u8def/, hosts: [/(^|\.)jhicc\.com$/] },
+  { company: /\u7ea2\u661f\u7f8e\u51ef\u9f99/, hosts: [/(^|\.)mmall\.com$/] },
+];
+
+const COMPANY_NAME_REPLACEMENTS = [
+  [/\u54d7\u54e9\u54d7\u54e9/g, "\u54d4\u54e9\u54d4\u54e9"],
+  [/\u8bc1\u52b5/g, "\u8bc1\u5238"],
+  [/\u6c90\u7ae5/g, "\u6c90\u77b3"],
+  [/minmax/gi, "minimax"],
+  [/pony\s*ai/gi, "\u5c0f\u9a6c\u667a\u884c"],
+];
+
+const TRACKING_PARAMS = /^(recommend|recommendCode|shareId|shareSource|spread|token|sessionid|sourceToken|referral_code|code|inviter_code|emplErp)$/i;
+const OPAQUE_LINK_HOSTS = new Set(["dwz.cn", "dqr.cn"]);
+
+function text(value) {
+  return value == null ? "" : String(value).trim();
+}
+
+function normalizeCompanyName(value) {
+  let result = text(value);
+  COMPANY_NAME_REPLACEMENTS.forEach(([pattern, replacement]) => {
+    result = result.replace(pattern, replacement);
+  });
+  return result;
+}
+
+function list(value) {
+  if (Array.isArray(value)) return value.map(text).filter(Boolean);
+  return text(value).split(/[、，,；;|]/).map(item => item.trim()).filter(Boolean);
+}
+
+function stableId(parts) {
+  const raw = parts.map(text).join("|").toLowerCase();
+  let hash = 2166136261;
+  for (let index = 0; index < raw.length; index += 1) {
+    hash ^= raw.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `radar-${(hash >>> 0).toString(36)}`;
+}
+
+function companyCore(value) {
+  return normalizeCompanyName(value)
+    .split(/[\u2014\u2013-]|\uff08|\(/)[0]
+    .replace(/\s+/g, "")
+    .replace(/\u80a1\u4efd\u6709\u9650\u516c\u53f8|\u6709\u9650\u8d23\u4efb\u516c\u53f8|\u6709\u9650\u516c\u53f8|\u63a7\u80a1\u96c6\u56e2|\u96c6\u56e2|\u79d1\u6280|\u516c\u53f8/g, "")
+    .toLowerCase();
+}
+
+function sameCompanyFamily(first, second) {
+  const a = companyCore(first);
+  const b = companyCore(second);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  return Math.min(a.length, b.length) >= 2 && (a.includes(b) || b.includes(a));
+}
+
+function parsedHttpUrl(value) {
+  try {
+    const url = new URL(text(value));
+    return /^https?:$/.test(url.protocol) ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function canonicalRecruitmentUrl(value) {
+  const url = parsedHttpUrl(value);
+  if (!url) return "";
+  url.hash = "";
+  [...url.searchParams.keys()].forEach(key => {
+    if (TRACKING_PARAMS.test(key)) url.searchParams.delete(key);
+  });
+  return url.href.replace(/\/$/, "");
+}
+
+function linkPolicy(company) {
+  return OFFICIAL_LINK_POLICIES.find(policy => policy.company.test(text(company)));
+}
+
+function policyMatchesUrl(policy, value) {
+  if (!policy) return false;
+  const url = parsedHttpUrl(value);
+  if (!url) return false;
+  return Boolean(policy.hosts?.some(pattern => pattern.test(url.hostname.toLowerCase())) || policy.urls?.some(pattern => pattern.test(url.href)));
+}
+
+function hasUnrelatedCompanies(rows) {
+  const companies = [...new Set(rows.map(row => row.company))];
+  return companies.some((company, index) => companies.slice(index + 1).some(other => !sameCompanyFamily(company, other)));
+}
+
+export function validateRadarJobLinks(jobs) {
+  const prepared = jobs.map(job => {
+    const originalApplyUrl = text(job.applyUrl);
+    const policy = linkPolicy(job.company);
+    if (!originalApplyUrl) return { ...job, linkStatus: "missing", linkNote: "\u539f数据未提供投递链接" };
+    if (!parsedHttpUrl(originalApplyUrl)) {
+      return { ...job, applyUrl: "", originalApplyUrl, linkStatus: "invalid", linkNote: "\u94fe接格式无效，已禁止打开" };
+    }
+    if (policy && !policyMatchesUrl(policy, originalApplyUrl)) {
+      if (policy.officialUrl) {
+        return {
+          ...job,
+          applyUrl: policy.officialUrl,
+          originalApplyUrl,
+          linkStatus: "corrected",
+          linkNote: "\u805a合源链接与公司不匹配，已替换为官方招聘入口",
+        };
+      }
+      return { ...job, applyUrl: "", originalApplyUrl, linkStatus: "mismatch", linkNote: "\u94fe接域名与公司不匹配，已禁止打开" };
+    }
+    if (OPAQUE_LINK_HOSTS.has(parsedHttpUrl(originalApplyUrl).hostname.toLowerCase())) {
+      return { ...job, applyUrl: "", originalApplyUrl, linkStatus: "unverified", linkNote: "\u77ed链接无法在打开前确认公司归属，已暂停使用" };
+    }
+    return {
+      ...job,
+      originalApplyUrl,
+      linkStatus: policy ? "verified" : "source",
+      linkNote: policy ? "\u516c司名与官方招聘域名匹配" : "\u94fe接来自聚合源，未标记为官网已核验",
+    };
+  });
+
+  const rowsByUrl = new Map();
+  prepared.forEach(job => {
+    const key = canonicalRecruitmentUrl(job.applyUrl);
+    if (!key) return;
+    if (!rowsByUrl.has(key)) rowsByUrl.set(key, []);
+    rowsByUrl.get(key).push(job);
+  });
+
+  return prepared.map(job => {
+    const key = canonicalRecruitmentUrl(job.applyUrl);
+    const relatedRows = key ? rowsByUrl.get(key) || [] : [];
+    if (!key || !hasUnrelatedCompanies(relatedRows)) return job;
+    const policy = linkPolicy(job.company);
+    if (policyMatchesUrl(policy, job.applyUrl)) return job;
+    return {
+      ...job,
+      applyUrl: "",
+      linkStatus: "conflict",
+      linkNote: "\u540c一链接被分配给多个不相关公司，已禁止打开",
+    };
+  });
+}
+
+function parseBatch(value) {
+  const raw = text(value).replace(/^批次[:：]?/, "");
+  if (raw.includes("提前")) return "提前批";
+  if (raw.includes("实习")) return "实习";
+  if (raw.includes("春招")) return "春招";
+  if (raw.includes("补录")) return "补录";
+  if (raw.includes("正式") || raw.includes("秋招")) return "正式批";
+  return raw ? "其他" : "待确认";
+}
+
+function parseCohort(...values) {
+  const joined = values.map(text).join(" ");
+  const match = joined.match(/20\d{2}届|\d{2}届/);
+  if (!match) return "不限";
+  return match[0].length === 3 ? `20${match[0]}` : match[0];
+}
+
+function normalizeIndustry(value) {
+  const raw = text(value);
+  if (/互联网|科技|软件|游戏|通信|电商|人工智能|AI/i.test(raw)) return "互联网/科技";
+  if (/半导体|芯片|硬件|电子/.test(raw)) return "半导体/硬件";
+  if (/银行|金融|证券|保险|基金/.test(raw)) return "金融";
+  if (/快消|零售|消费|食品|农业/.test(raw)) return "消费/零售";
+  if (/汽车|新能源车/.test(raw)) return "汽车/新能源";
+  if (/制造|装备|重工|能源|电力|化工|建筑|地产|物流|交通/.test(raw)) return "制造/能源";
+  if (/央国企|国企|军工|研究所|事业单位|高校|政府/.test(raw)) return "央国企/公共部门";
+  return "其他";
+}
+
+function splitRoleDirections(value) {
+  const roles = (Array.isArray(value) ? value : [value])
+    .flatMap(item => text(item).replaceAll("\\n", "\n").replaceAll("\\t", "\t").split(/[、，,；;|｜\/／\n\t]|\s{2,}|\s+·\s+/))
+    .map(item => item.replace(/[（）()].*?[）)]/g, "").trim())
+    .map(item => item.replace(/(?:等|等岗位|等方向)[。.！!]?$/, "").trim())
+    .filter(item => item && item !== "-" && item.length <= 42);
+  return [...new Set(roles)].slice(0, 12);
+}
+
+function normalizeXiaozhao(item) {
+  const company = normalizeCompanyName(item.c) || "公司待确认";
+  const role = text(item.p) || "岗位方向待确认";
+  const location = text(item.l) || "地点待确认";
+  const batch = parseBatch(item.w || item.t);
+  const cohort = parseCohort(item.w, item.t, role);
+  return {
+    id: stableId([company, role, location, batch, item.u]),
+    company,
+    role,
+    positions: splitRoleDirections(role),
+    location,
+    locations: list(location.replaceAll("/", "、")),
+    industry: normalizeIndustry(text(item.ind) || text(item.t)),
+    sourceIndustry: text(item.ind) || text(item.t) || "其他",
+    cohort,
+    batch,
+    program: text(item.w).replace(/^批次[:：]?/, "") || `${cohort}校园招聘`,
+    deadline: text(item.d) || "待确认",
+    education: text(item.e),
+    applyUrl: text(item.u),
+    sourceId: "xiaozhao-radar",
+    sourceName: text(item.s) || "校招雷达公开聚合",
+    sourceNames: [text(item.s) || "校招雷达公开聚合"],
+    firstSeen: "",
+    lastSeen: "2026-09-03",
+    confirmedBy: 1
+  };
+}
+
+export function normalizeXixicc(item) {
+  const company = normalizeCompanyName(item.company) || "公司待确认";
+  const positions = list(item.positions);
+  const role = positions.join("、") || "岗位方向待确认";
+  const locations = list(item.locations);
+  const batch = parseBatch(item.batch);
+  return {
+    id: stableId([company, item.program, role, locations.join("、"), batch]),
+    company,
+    role,
+    positions: splitRoleDirections(positions),
+    location: locations.join(" / ") || "地点待确认",
+    locations,
+    industry: normalizeIndustry(item.industry),
+    sourceIndustry: text(item.industry) || "其他",
+    cohort: text(item.cohort) || "不限",
+    batch,
+    program: text(item.program) || `${text(item.cohort) || "校园"}${batch}`,
+    deadline: text(item.deadline) || "待确认",
+    education: "",
+    applyUrl: text(item.apply_url),
+    sourceId: "xixicc2027",
+    sourceName: "2027 届秋招信息汇总",
+    sourceNames: ["2027 届秋招信息汇总"],
+    firstSeen: text(item.first_seen),
+    lastSeen: text(item.last_seen),
+    confirmedBy: Number(item.confirmed_by) || 1
+  };
+}
+
+function mergeJobs(jobs) {
+  const merged = new Map();
+  const linkStatusRank = { verified: 5, corrected: 4, source: 3, unverified: 2, conflict: 1, mismatch: 1, invalid: 1, missing: 0 };
+  jobs.forEach(job => {
+    const key = [job.company, job.batch, job.role.slice(0, 80), job.location].join("|").toLowerCase();
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, job);
+      return;
+    }
+    existing.sourceNames = [...new Set([...existing.sourceNames, ...job.sourceNames])];
+    existing.confirmedBy = Math.max(existing.confirmedBy, job.confirmedBy, existing.sourceNames.length);
+    if ((linkStatusRank[job.linkStatus] || 0) > (linkStatusRank[existing.linkStatus] || 0)) {
+      existing.applyUrl = job.applyUrl;
+      existing.originalApplyUrl = job.originalApplyUrl;
+      existing.linkStatus = job.linkStatus;
+      existing.linkNote = job.linkNote;
+    }
+    existing.deadline = existing.deadline === "待确认" ? job.deadline : existing.deadline;
+    existing.firstSeen ||= job.firstSeen;
+    existing.lastSeen = [existing.lastSeen, job.lastSeen].filter(Boolean).sort().at(-1) || "";
+  });
+  return [...merged.values()];
+}
+
+export async function loadRadarJobs() {
+  const status = [];
+  const batches = await Promise.all(JOB_SOURCES.map(async source => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch(source.url, { cache: "no-store", signal: controller.signal });
+      clearTimeout(timeout);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      const raw = payload.jobs;
+      if (!Array.isArray(raw) || !raw.length) throw new Error("数据源为空或格式发生变化");
+      const jobs = source.id === "xiaozhao-radar" ? raw.map(normalizeXiaozhao) : raw;
+      status.push({ ...source, cadence: payload.updatedAt ? `快照更新：${payload.updatedAt}` : source.cadence, state: "ok", count: jobs.length, checkedAt: new Date().toISOString() });
+      return jobs;
+    } catch (error) {
+      status.push({ ...source, state: "error", count: 0, checkedAt: new Date().toISOString(), message: error.message });
+      return [];
+    }
+  }));
+  const validatedJobs = validateRadarJobLinks(batches.flat());
+  const jobs = mergeJobs(validatedJobs);
+  const finalJobs = jobs.length ? jobs : validateRadarJobLinks(FALLBACK_RADAR_JOBS);
+  const linkSummary = finalJobs.reduce((summary, job) => {
+    summary[job.linkStatus || "missing"] = (summary[job.linkStatus || "missing"] || 0) + 1;
+    return summary;
+  }, {});
+  return { jobs: finalJobs, status, offline: !jobs.length, linkSummary };
+}
