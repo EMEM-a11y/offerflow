@@ -30,6 +30,8 @@
 
 ## GitHub Pages 配置
 
+- [x] 2026-09-07：公开测试版已发布到 https://emcalling.com/；Actions 构建及部署成功，线上页面、脚本、样式和内置题图均正常响应。浏览器确认共享题库载入 641 题，岗位搜索可用，字节入口指向字节官网。这是抽查，不代表每道题和每个岗位逐项验收。
+- [x] 公开隐私说明已补充维护者确认的联系邮箱、悉尼云端区域、当前保存与删除方式，以及账号注销申请入口。
 - [x] 2026-09-07：emcalling.com 已通过目标 GitHub 账号的域名归属验证；DNS 验证 TXT 已在权威与公共解析器核对，GitHub 显示 Verified。此项不代表仓库已绑定域名或站点已部署。
 - [x] 2026-09-07：仓库 Pages 来源为 GitHub Actions，Custom domain 已保存 emcalling.com；根域名四条官方 A 记录在权威与公共 DNS 均核对通过，GitHub 显示 DNS valid for primary。www 子域名未配置。
 - [x] Enforce HTTPS 已开启；保持正常证书校验并连接已验证的官方 IP 后，HTTPS 返回 GitHub 404（内容尚未部署），HTTP 返回 301 到 https://emcalling.com/。本机普通 DNS 缓存及正式内容访问还需验收，未绕过证书警告。
@@ -39,13 +41,15 @@
 3. 配置 Repository Variables：VITE_SUPABASE_URL、VITE_SUPABASE_ANON_KEY、VITE_TURNSTILE_SITE_KEY。发布流程已固定 OFFERFLOW_BASE=/，不再设置仓库子路径变量。
 4. 仅填写项目 URL 和浏览器用的 publishable/anon key。不要把 service_role、sb_secret、邮箱服务密码或个人访问令牌放进 VITE_ 变量。
 5. 正式网址为 https://emcalling.com/。先验证 GitHub 账号对域名的所有权，再在仓库 Pages 设置 Custom domain；随后配置域名解析并验证 HTTPS。保留 auth.emcalling.com 的现有发信 DNS 记录。使用 Actions 发布时无需添加 CNAME 文件；不要在域名绑定成功前将解析指向尚未认领的 Pages 站点。
-6. 完成全部发布验收后，由维护者明确设置 RELEASE_READY=true，才允许工作流发布。
+6. 审查公开范围和账号隔离并取得维护者发布确认后，设置 RELEASE_READY=true。此开关仅表示允许发布，不代表所有线上验收项已经通过；未完成项继续保留在清单中。
 7. 流程先跑测试和更新、再构建与检查，最后上传 dist。失败不会覆盖当前已部署版本。第一次发布后检查所有模块、题图、刷新页面与邮箱登录。
 
 ## Supabase 配置
 
 - 新项目按 supabase/schema.sql 建表；已有项目先备份并审查策略，再应用。脚本不删除数据。
 - 正式站点和 HTTPS 可用后，Site URL 设置 https://emcalling.com/，Redirect URLs 加入精确地址 https://emcalling.com/。验收期间按需保留 http://127.0.0.1:5174/，不要使用全站通配符；新邮件必须回到正式站点。站点未上线前不要提前切换默认回跳。
+- [x] 正式页面上线后，Site URL 已保存为 https://emcalling.com/，保存按钮恢复禁用；未更改账号、数据库权限或发信密钥。
+- [ ] 正式域名与本机的两条精确白名单已核对输入并点击 Save URLs；随后后台页面读取异常，尚需回读确认。正式站点发信与点击登录仍待验收。
 - 当前使用邮箱免密码登录。核对邮箱模板使用的回跳地址；配置正式 SMTP 并测试真实送达、过期链接及不同设备登录。
 - [x] 自定义 SMTP 已保存启用，本地登录邮件进入收件箱且 SPF/DKIM 通过，使用者确认链接返回本地站点可用。正式站点回跳与过期链接仍未验收。
 - 公众注册已由使用者选择开启，正式上线前仍需配置服务端注册/发信限流与人机验证，并验证未验证邮箱不能访问私人工作区；不要仅凭前端倒计时放行上线。

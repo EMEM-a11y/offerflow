@@ -1,6 +1,6 @@
 # OfferFlow 求职助手
 
-共享题库与公开岗位发现，配合每个账号独立的求职工作区。当前为上线准备版，尚未正式发布。
+共享题库与公开岗位发现，配合每个账号独立的求职工作区。公开测试版：https://emcalling.com/。
 
 ## 启动与检查
 
@@ -53,8 +53,8 @@ GitHub 发布流程准备了每天 01:23 UTC（北京时间 09:23）检查并重
 ## 部署
 
 按 [上线检查清单](docs/RELEASE_CHECKLIST.md) 完成 GitHub Pages、Supabase、账号隔离及发布验收。第三方来源尚未明确的使用条件单独记录，不标记为已获授权。
-`RELEASE_READY` 默认未开启；不能仅因为构建成功就打开。
-正式网址计划使用 `https://emcalling.com/`，由 GitHub Pages 托管；发布流程固定使用根路径 `/`，不再使用 `/offerflow/`。域名绑定、HTTPS 和正式登录回跳仍需实际验收，不能把本地测试通过视为已上线。
+当前仓库已开启 `RELEASE_READY` 进行公开测试发布；新部署仍须先审查公开范围及账号隔离，不能仅因为构建成功就打开。
+正式网址为 `https://emcalling.com/`，由 GitHub Pages 托管；发布流程固定使用根路径 `/`，不再使用 `/offerflow/`。域名绑定和 HTTPS 已验收，正式登录返回地址已配置；邮件点击后的完整登录流程仍须实际验收。
 登录框在勾选隐私说明后加载 Cloudflare Turnstile。仓库变量 `VITE_TURNSTILE_SITE_KEY` 只放公开 Site key；Secret key 仅填入 Supabase 后台，不进入代码。必须同时启用 Supabase 服务端 CAPTCHA，前端验证本身不能阻止绕过页面直接请求发信。
 发信仍使用 `auth.emcalling.com`，不因网站更换网址而重新创建邮箱服务。新网址不自动获得旧网址的本地简历文件、录音和浏览器登录状态；保留原浏览器数据，完成附件导出与新站点恢复后再清理。
 只提交本项目，不能把上级“助手团”或本机备份目录一起上传。
