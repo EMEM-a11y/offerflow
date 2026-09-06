@@ -88,6 +88,28 @@ test("public questions include shared JD papers without login",t=>{
   assert.ok(run('availablePracticePapers().some(p=>p.id==="jd-assessment-set-2")'));
 });
 
+test("restoring a resume preserves metadata and never queues a cloud write", async t=>{
+  const {run,writes}=app(t, {fixtureFile:{name:"resume.pdf",size:4,type:"application/pdf",arrayBuffer:async()=>new Uint8Array([1,2,3,4]).buffer}});
+  await run('applyCloudUser({id:"A"})');
+  run('state.resumeDocuments=[{id:"doc",name:"resume.pdf",type:"application/pdf",sizeLabel:"1 KB",addedAt:"original"}]; let stored; getResumeFile=async()=>stored; putResumeFile=async(id,file,onlyIfMissing)=>{if(id!=="doc" || !onlyIfMissing) throw Error("unsafe write"); stored=file;};');
+  const before=run("JSON.stringify(state.resumeDocuments)");
+  await run('restoreResumeDocument("doc",fixtureFile)');
+  assert.equal(run("JSON.stringify(state.resumeDocuments)"),before);
+  assert.equal(writes.length,0);
+  await assert.rejects(run('restoreResumeDocument("doc",fixtureFile)'),/已有/);
+});
+
+test("resume restoration rejects wrong files and an account switch before writing", async t=>{
+  const {run}=app(t, {fixtureFile:{name:"resume.pdf",size:4,type:"application/pdf"}});
+  await run('applyCloudUser({id:"A"})');
+  run('state.resumeDocuments=[{id:"doc",name:"resume.pdf",type:"application/pdf",sizeLabel:"1 KB"}]; putResumeFile=async()=>{throw Error("must not write")};');
+  await assert.rejects(run('restoreResumeDocument("doc",{...fixtureFile,name:"wrong.pdf"})'),/同名/);
+  await assert.rejects(run('restoreResumeDocument("doc",{...fixtureFile,size:999999})'),/大小/);
+  await assert.rejects(run('restoreResumeDocument("doc",{...fixtureFile,type:"text/plain"})'),/类型/);
+  run('getResumeFile=async()=>{authEpoch++;return null}');
+  await assert.rejects(run('restoreResumeDocument("doc",fixtureFile)'),/账号已变化/);
+});
+
 test("attachment databases are account-scoped and locked for guests",async t=>{
   const {run}=app(t);
   assert.throws(()=>run('accountDatabaseName("files")'));

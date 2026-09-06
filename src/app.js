@@ -561,11 +561,13 @@ function openResumeFileDb() {
   });
 }
 
-async function putResumeFile(id, file) {
+async function putResumeFile(id, file, onlyIfMissing = false) {
   const db = await openResumeFileDb();
   await new Promise((resolve, reject) => {
     const transaction = db.transaction(RESUME_FILE_STORE, "readwrite");
-    transaction.objectStore(RESUME_FILE_STORE).put(file, id);
+    const store = transaction.objectStore(RESUME_FILE_STORE);
+    if (onlyIfMissing) store.add(file, id);
+    else store.put(file, id);
     transaction.oncomplete = resolve;
     transaction.onerror = () => reject(transaction.error);
   });
@@ -583,6 +585,27 @@ async function getResumeFile(id) {
   db.close();
   assertSession(epoch);
   return blob;
+}
+
+async function restoreResumeDocument(id, file) {
+  const epoch = authEpoch;
+  assertSession(epoch);
+  const meta = state.resumeDocuments.find(item => item.id === id);
+  if (!meta) throw new Error("这条简历记录已不存在");
+  if (!file?.size || file.name !== meta.name) throw new Error("请选择与这条记录同名的原始文件");
+  const sizeLabel = file.size >= 1024 * 1024 ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(file.size / 1024))} KB`;
+  if (sizeLabel !== meta.sizeLabel || (meta.type && file.type !== meta.type)) throw new Error("文件大小或类型与原记录不符，请核对原件");
+  const existing = await getResumeFile(id);
+  assertSession(epoch);
+  if (existing) throw new Error("当前浏览器已有这份文件，未覆盖");
+  // add() also prevents a simultaneous tab from being overwritten.
+  await putResumeFile(id, file, true);
+  assertSession(epoch);
+  const restored = await getResumeFile(id);
+  const digest = async blob => new Uint8Array(await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()));
+  const [before, after] = await Promise.all([digest(file), digest(restored)]);
+  assertSession(epoch);
+  if (!before.every((value, index) => value === after[index])) throw new Error("文件校验未通过，请保留备份并联系维护者");
 }
 
 async function removeResumeFile(id) {
@@ -2123,8 +2146,9 @@ function renderResumeVault() {
         <section class="panel pad vault-section">
           <div class="vault-head"><div><h2>简历文件</h2><p>文件保存在当前浏览器，不会上传</p></div><label class="btn small file-button">添加文件<input id="resume-document" type="file" accept=".pdf,.doc,.docx,.txt" hidden></label></div>
           <div class="document-list">
-            ${(state.resumeDocuments || []).map(document => `<article class="document-row"><div class="document-mark">${escapeHtml(document.extension || "CV")}</div><div><strong>${escapeHtml(document.name)}</strong><span>${escapeHtml(document.sizeLabel)} / ${escapeHtml(document.addedAt)}</span></div><div class="document-actions"><button class="btn small ghost" data-download-document="${document.id}">下载</button><button class="btn small ghost danger" data-remove-document="${document.id}">删除</button></div></article>`).join("") || `<div class="inline-empty">支持 PDF、Word 和文本简历。MVP 先保存原文件和结构化资料。</div>`}
+            ${(state.resumeDocuments || []).map(document => `<article class="document-row"><div class="document-mark">${escapeHtml(document.extension || "CV")}</div><div><strong>${escapeHtml(document.name)}</strong><span>${escapeHtml(document.sizeLabel)} / ${escapeHtml(document.addedAt)}</span></div><div class="document-actions"><button class="btn small ghost" data-download-document="${document.id}">下载</button><label class="btn small ghost file-button">补回文件<input type="file" accept=".pdf,.doc,.docx,.txt" data-restore-document="${document.id}" hidden></label><button class="btn small ghost danger" data-remove-document="${document.id}">删除</button></div></article>`).join("") || `<div class="inline-empty">支持 PDF、Word 和文本简历。MVP 先保存原文件和结构化资料。</div>`}
           </div>
+          <p class="field-help">换网址或浏览器后，可用“补回文件”选择同名原件。只补齐本机附件，不新增记录、不覆盖已有文件，也不会上传云端。</p>
         </section>
         <section class="panel pad vault-section">
           <div class="vault-head"><div><h2>常见问题答案库</h2><p>先保存事实，按不同岗位再改写</p></div><button class="btn small" data-modal="answer">添加回答</button></div>
@@ -3078,7 +3102,7 @@ document.addEventListener("click", (event) => {
       const link = Object.assign(document.createElement("a"), { href: url, download: documentMeta.name });
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }).catch(() => showToast("文件未找到，请重新添加"));
+    }).catch(() => showToast("文件未找到或读取失败，可用这条记录的“补回文件”恢复原件"));
     return;
   }
 
@@ -3727,6 +3751,15 @@ document.addEventListener("change", (event) => {
       state.modal = "confirm-import-data";
       render();
     }).catch(error => showToast(`导入失败：${error.message}`));
+    return;
+  }
+  if (event.target.matches("[data-restore-document]")) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    restoreResumeDocument(event.target.dataset.restoreDocument, file)
+      .then(() => showToast("原文件已补回当前浏览器，校验通过；未改动云端记录"))
+      .catch(error => showToast(`未完成补回：${error.message}`))
+      .finally(() => { event.target.value = ""; });
     return;
   }
   if (event.target.id === "resume-document") {
