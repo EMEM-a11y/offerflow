@@ -6,7 +6,19 @@
 
 运行 `pnpm collect:rules` 可收集已登记的全部来源；`pnpm collect:rules 大疆` 可只检查一家公司（支持公司别名）。脚本不调用模型，不读取登录账号、简历或投递记录。
 
-结果保存在被 Git 忽略的 `work/application-rule-candidates.json`，包含来源、适用批次、抓取时间及简短候选摘录。报告不会写入公开规则或触发网站发布。目前没有给规则收集配置定时运行；岗位每日更新是另一条独立流程。
+结果保存在被 Git 忽略的 `work/application-rule-candidates.json`，包含来源、适用批次、抓取时间及简短候选摘录。可读报告为同目录的 `application-rule-review.md`。报告不会写入公开规则。
+
+## 定时检查
+
+已接入 `.github/workflows/deploy.yml` 的独立 `rules` 任务，与既有岗位更新一起计划在每天北京时间 09:23 执行，也支持主分支更新或手动运行触发。不依赖本机或 Codex 开启，不使用模型、不访问账号或简历，也不给任务任何仓库写入权限。规则检查失败不会阻止原本的网站发布任务。
+
+在 GitHub → Actions → Verify and publish OfferFlow → 最新一次运行的 Summary 查看报告；Artifacts 中的 `application-rule-review` 可下载 JSON 和 Markdown，保留 30 天。报告属于公开仓库的公开来源资料，不包含个人投递数据。
+
+每个来源以去掉脚本、样式及多余空白后的页面文本指纹，与上次成功抓取比较（不只比较三段摘要）。报告区分首次收集、内容变化、未变和暂无法核对，并在内容变化时保留前后摘要。页面导航或其他文案变化也可能触发“内容变化”，不能据此认定投递政策改变。
+
+上次成功记录通过 GitHub Actions 缓存保存；部分来源抓取失败不会覆盖其成功记录。首次运行或缓存被清理后会重新建立基线，不假称没有发生过变化。所有来源都无法比较时，任务报错并保留失败报告。这里不是自动发现新公司，也不会自动修改网站卡片、核验日期或触发模型审核。
+
+GitHub 定时任务可能延迟；公开仓库连续 60 天没有活动时，定时任务可能被停用，届时需到 Actions 重新启用。参见 [GitHub 定时触发说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)。
 
 - `candidate_only`：发现相关文字，仍需核对公司、届次和上下文；不代表规则已核验。
 - `manual_required`：无可提取文字或非 HTML，需人工打开。动态网页、图片 FAQ 不保证能够直接抓取。
