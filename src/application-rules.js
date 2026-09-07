@@ -1,6 +1,79 @@
-export const APPLICATION_RULES_UPDATED_AT = "2026-09-06";
+export const APPLICATION_RULES_UPDATED_AT = "2026-09-07";
 
 export const APPLICATION_RULES = [
+  {
+    id: "dji-2027",
+    company: "大疆",
+    aliases: ["DJI", "大疆创新"],
+    cohort: "2027 届拓疆者校招",
+    checkedAt: "2026-09-07",
+    signal: "常规校招 1 次",
+    evidence: "official",
+    evidenceLabel: "官方当届页面",
+    quota: "拓疆者校招仅允许投递 1 次；数字管理构建者计划明确不占校招投递次数",
+    parallel: "专项不占次数不等于流程一定并行，官网未明确并行安排",
+    retry: "官网未说明未通过后是否返还投递机会",
+    change: "当届公开页面未明确已投岗位的修改规则",
+    advice: "先选准常规校招岗位；符合条件时可另外查看数字管理构建者计划，不要把专项例外套用到所有岗位。",
+    sources: [
+      { label: "2027 热招职位与投递说明", url: "https://careers.dji.com/zh-CN/campus/hot-jobs?source=campus_hotjobs" },
+      { label: "数字管理构建者计划", url: "https://careers.dji.com/zh-CN/campus/digital-recruitment" }
+    ]
+  },
+  {
+    id: "honor-campus",
+    company: "荣耀",
+    aliases: ["HONOR"],
+    cohort: "校招常驻 FAQ（未标届次）",
+    checkedAt: "2026-09-07",
+    signal: "1 岗 + 第二意向",
+    evidence: "official",
+    evidenceLabel: "招聘官网 FAQ",
+    quota: "校招可投递 1 个职位，填写简历时可填写第二意向岗位",
+    parallel: "第二意向不是第二次独立投递；官网未说明校招两个意向是否并行处理",
+    retry: "官网未明确校招未通过后的重投或冷却期规则",
+    change: "官网未明确校招已投岗位的修改规则",
+    advice: "官网建议两个意向选择不同职类。FAQ 中“同时投两个职位”的说明属于社招，不能套用到校招。",
+    sources: [
+      { label: "官方招聘常见问题", url: "https://www.honor.com/cn/career/faq/" }
+    ]
+  },
+  {
+    id: "giant-2027",
+    company: "巨人网络",
+    aliases: ["巨人", "Giant", "征途"],
+    cohort: "2027 届校招",
+    checkedAt: "2026-09-07",
+    signal: "最多 2 岗",
+    evidence: "official",
+    evidenceLabel: "官方 2027 校招 FAQ",
+    quota: "最多可投递 2 个职位",
+    parallel: "官方 FAQ 未说明两个职位是否同时推进",
+    retry: "官方 FAQ 未说明未通过后是否返还投递名额",
+    change: "简历提交后不再支持职位更改",
+    advice: "提交前确认两个岗位都符合自己的方向；不要先随便投一个，再等后续换岗。",
+    sources: [
+      { label: "官方校招 FAQ", url: "https://hr.ztgame.com/campus/join/faq/" }
+    ]
+  },
+  {
+    id: "sangfor-2027",
+    company: "深信服",
+    aliases: ["Sangfor"],
+    cohort: "2027 届秋招（含提前批、正式批）",
+    checkedAt: "2026-09-07",
+    signal: "两批合计 1 次",
+    evidence: "mixed",
+    evidenceLabel: "高校发布的当届招聘简章",
+    quota: "秋招期间含提前批、正式批，仅有 1 次投递机会，只能投 1 个岗位",
+    parallel: "仅可投递 1 个岗位，不是提前批和正式批各 1 岗",
+    retry: "简章未承诺失败后返还机会，不应把正式批当成一次额外机会",
+    change: "投递后无法修改",
+    advice: "先确认岗位再提交；网申中的校招站点对应后续线下面试地点，也要一起核对。",
+    sources: [
+      { label: "华中科大 · 2027 招聘简章", url: "https://job.hust.edu.cn/zpinfo1/2412948.htm" }
+    ]
+  },
   {
     id: "bytedance-2027",
     company: "字节跳动",

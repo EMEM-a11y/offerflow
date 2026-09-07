@@ -1572,12 +1572,12 @@ function renderApplicationRules() {
         <label for="application-rule-search"><span>搜索公司</span><input class="search" id="application-rule-search" type="search" value="${escapeHtml(filters.query)}" placeholder="例如：腾讯、小米或 ByteDance" autocomplete="off"></label>
         <div class="application-rule-library-meta"><strong>规则库 ${APPLICATION_RULES.length} 家</strong><span>${officialCount} 家官网已明确</span></div>
       </div>
-      <div class="application-rule-result-meta"><span id="application-rule-result-count" aria-live="polite">找到 ${visibleCount} 家公司</span><span>规则更新于 ${APPLICATION_RULES_UPDATED_AT}</span></div>
+      <div class="application-rule-result-meta"><span id="application-rule-result-count" aria-live="polite">找到 ${visibleCount} 家公司</span><span>规则库更新于 ${APPLICATION_RULES_UPDATED_AT}（非全部重新核验）</span></div>
     </section>
     <div class="application-rule-grid">
       ${APPLICATION_RULES.map(rule => `<article class="application-rule-card panel" data-rule-card data-rule-search="${escapeHtml([rule.company, ...(rule.aliases || []), rule.cohort, rule.signal, rule.quota].join(" ").toLowerCase())}" ${applicationRuleMatches(rule, filters) ? "" : "hidden"}>
         <header>
-          <div><span>${escapeHtml(rule.cohort)}</span><h3>${escapeHtml(rule.company)}</h3></div>
+          <div><span>${escapeHtml(rule.cohort)}${rule.checkedAt ? ` · 核对 ${escapeHtml(rule.checkedAt)}` : ""}</span><h3>${escapeHtml(rule.company)}</h3></div>
           <strong class="rule-signal">${escapeHtml(rule.signal)}</strong>
         </header>
         <div class="rule-quota"><span>核心限制</span><strong>${escapeHtml(rule.quota)}</strong></div>
@@ -1590,7 +1590,7 @@ function renderApplicationRules() {
         <footer><span class="rule-evidence ${rule.evidence}">${escapeHtml(rule.evidenceLabel)}</span><div>${rule.sources.map(source => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.label)}</a>`).join("")}</div></footer>
       </article>`).join("")}
     </div>
-    <div class="large-empty application-rule-empty" id="application-rule-empty" ${visibleCount ? "hidden" : ""}><strong>暂时没有找到这家公司</strong><p>可以换一个公司名称，或切回“全部规则”。</p></div>
+    <div class="large-empty application-rule-empty" id="application-rule-empty" ${visibleCount ? "hidden" : ""}><strong>暂时没有找到这家公司</strong><p>可以换一个公司名称，或清空搜索框查看全部规则。</p></div>
     <p class="application-rule-note">投递前请再打开对应招聘官网确认一次。页面显示的是公开规则摘要，不替代企业个人中心里的实时提示。</p>
   `;
 }
