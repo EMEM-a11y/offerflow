@@ -743,15 +743,7 @@ button.radar-metric:active { transform: translateY(1px); }
 .practice-tab:hover { color: var(--ink); }
 .practice-tab.active { color: var(--ink); border-bottom-color: var(--accent); }
 
-.practice-summary { border-radius: var(--radius); background: #292b2d; color: #f4f4f2; padding: 28px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; overflow: hidden; }
-.practice-summary-main { position: relative; }
 .practice-kicker { color: #ef9b7f; font-size: var(--text-sm); font-weight: 700; }
-.practice-summary h2 { font-size: 28px; line-height: 1.1; letter-spacing: -.04em; margin: 7px 0 9px; }
-.practice-summary p { color: #b9bcc0; font-size: var(--text-sm); line-height: 1.65; max-width: 52ch; margin: 0 0 18px; }
-.practice-summary-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; align-self: stretch; background: #44474a; border-radius: 11px; overflow: hidden; }
-.practice-summary-stats div { background: #333638; display: flex; flex-direction: column; justify-content: center; padding: 16px; }
-.practice-summary-stats strong { font-size: 24px; letter-spacing: -.04em; }
-.practice-summary-stats span { color: #aeb2b5; font-size: var(--text-xs); margin-top: 5px; }
 
 .practice-section { margin-top: 30px; }
 .practice-section.no-top-gap { margin-top: 4px; }
@@ -759,14 +751,18 @@ button.radar-metric:active { transform: translateY(1px); }
 .practice-section-head h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
 .practice-section-head p { color: var(--muted); font-size: var(--text-sm); margin: 5px 0 0; }
 .category-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
-.category-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; min-height: 190px; display: flex; flex-direction: column; }
+.category-card { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; }
 .category-top { display: flex; align-items: center; justify-content: space-between; }
 .category-glyph { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-ink); font-size: var(--text-sm); font-weight: 700; flex: 0 0 auto; }
-.difficulty-dots { color: var(--muted); font-size: var(--text-xs); }
-.category-card h3 { margin: 16px 0 5px; font-size: var(--text-base); }
-.category-card p { color: var(--muted); font-size: var(--text-xs); line-height: 1.5; margin: 0; }
-.category-meta { display: flex; justify-content: space-between; color: var(--faint); font-size: var(--text-xs); margin: 14px 0 12px; }
-.category-card .btn { margin-top: auto; align-self: flex-start; }
+.category-recommendation { color: var(--accent-ink); font-size: var(--text-xs); font-weight: 600; }
+.category-card h3 { margin: 14px 0 8px; font-size: var(--text-base); }
+.category-count { color: var(--muted); font-size: var(--text-sm); margin: 0; }
+.category-count strong { color: var(--ink); font-size: 1.5rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.category-metrics { display: grid; gap: 8px; margin: 16px 0 18px; font-size: var(--text-sm); }
+.category-metrics > div { display: flex; justify-content: space-between; gap: 8px; }
+.category-metrics dt { color: var(--muted); }
+.category-metrics dd { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.category-card .btn { margin-top: auto; width: 100%; }
 
 .paper-list { display: grid; gap: 10px; }
 .paper-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: center; border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 17px; }
@@ -1172,7 +1168,6 @@ details.rule-advice { min-height: 0; }
 .panel-title { font-size: var(--text-base); font-weight: 680; }
 .panel-sub { color: var(--faint); }
 .stack { gap: 16px; }
-.practice-summary,
 .result-hero,
 .company-match-intro,
 .company-fit-box,
@@ -1186,16 +1181,12 @@ details.rule-advice { min-height: 0; }
   -webkit-backdrop-filter: blur(22px) saturate(140%);
   backdrop-filter: blur(22px) saturate(140%);
 }
-.practice-summary p,
 .company-match-intro p,
 .resume-brief p { color: var(--muted); }
 .practice-kicker,
 .resume-brief-label { color: var(--accent-ink); }
-.practice-summary-stats,
 .resume-brief-stats { background: transparent; gap: 8px; }
-.practice-summary-stats div,
 .resume-brief-stats > div { color: var(--ink); background: rgba(255, 255, 255, .62); border: 1px solid var(--line); border-radius: 13px; }
-.practice-summary-stats span,
 .resume-brief-stats span { color: var(--faint); }
 .company-fit-head span,
 .company-fit-box > small,
@@ -1487,7 +1478,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   .application-card,
   .question-canvas,
   .answer-sheet { box-shadow: 0 10px 34px rgba(0, 0, 0, .13); }
-  .practice-summary,
   .result-hero,
   .company-match-intro,
   .company-fit-box,
@@ -1495,7 +1485,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
     background: radial-gradient(circle at 95% 0%, rgba(10, 132, 255, .18), transparent 38%), rgba(35, 35, 38, .9);
     border-color: rgba(10, 132, 255, .2);
   }
-  .practice-summary-stats div,
   .resume-brief-stats > div,
   .company-fit-box ol li { background: rgba(255, 255, 255, .045); }
   input, textarea, select { background: rgba(44, 44, 46, .78); }
@@ -1637,9 +1626,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   .field.full { grid-column: auto; }
   .kanban { grid-template-columns: repeat(4, 82vw); }
   .resume-preview { padding: 24px 20px; }
-  .practice-summary { grid-template-columns: 1fr; padding: 22px; }
-  .practice-summary-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .practice-summary-stats div { padding: 12px 8px; }
   .category-grid { grid-template-columns: 1fr; }
   .wrong-card { grid-template-columns: 1fr; }
   .wrong-card-actions { justify-content: flex-end; }

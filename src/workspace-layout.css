@@ -35,7 +35,6 @@ textarea { resize: vertical; }
 .daily-encouragement-copy { flex-wrap: wrap; gap: 4px 12px; }
 .daily-encouragement p { white-space: normal; font-size: var(--text-sm); line-height: 1.6; }
 .home-wooden-fish { min-height: 60px; min-width: 168px; }
-.practice-continue { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 0 20px; color: var(--muted); }
 .compact-menu { position: relative; }
 .compact-menu summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: var(--text-sm); list-style: none; }
 .compact-menu summary::after::after { content: "⌄"; margin-left: 10px; }

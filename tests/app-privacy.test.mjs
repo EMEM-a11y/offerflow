@@ -35,6 +35,25 @@ function app(t, overrides = {}) {
   return { run:code=>vm.runInContext(code,context),writes };
 }
 
+test("practice overview keeps recommendations in cards with labelled metrics and a mixed entry", async t => {
+  const { run } = app(t);
+  await run('applyCloudUser({id:"A"})');
+  let html = run("renderPracticeOverview()");
+  assert.doesNotMatch(html, /practice-summary|category-recommendation|词语运用/);
+  assert.equal((html.match(/class="category-card"/g) || []).length, 5);
+  assert.equal((html.match(/<dt>正确率<\/dt>/g) || []).length, 5);
+  assert.equal((html.match(/<dt>建议用时<\/dt>/g) || []).length, 5);
+  assert.match(html, /data-start-category="mixed">混合练习/);
+  run('state.practiceHistory=[{results:[{questionId:questionBank()[0].id,correct:false}]}];');
+  html = run("renderPracticeOverview()");
+  assert.equal((html.match(/class="category-recommendation"/g) || []).length, 1);
+  assert.match(html, /<dd>0%<\/dd>/);
+  assert.match(html, /class="btn small primary" data-start-category=/);
+  run('questionBank=()=>[]; communityBankStatus="loading";');
+  html = run("renderPracticeOverview()");
+  assert.equal((html.match(/disabled>题库载入中/g) || []).length, 5);
+});
+
 test("home omits the next-action module while retaining progress and actionable reminders", async t => {
   const { run } = app(t);
   await run('applyCloudUser({id:"A"})');

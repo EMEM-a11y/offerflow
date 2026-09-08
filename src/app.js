@@ -1349,7 +1349,6 @@ function renderPractice() {
   const sessionAvailable = state.practiceSession?.questionIds?.some((id) => questionById(id));
   if (state.practiceSession && sessionAvailable) return viewWrap("practice", renderPracticeSession());
 
-  const stats = practiceStats();
   const requestedTab = state.practiceView || "overview";
   const activeTab = !hasPrivateAccess() && ["wrongbook", "stats"].includes(requestedTab) ? "overview" : requestedTab;
   return viewWrap("practice", `
@@ -1364,25 +1363,29 @@ function renderPractice() {
     <div class="practice-tabs" role="tablist" aria-label="刷题模块">
       ${[["overview", "训练首页"], ["papers", "模拟套卷"], ...(hasPrivateAccess() ? [["wrongbook", `错题本 ${state.wrongQuestionIds.length}`], ["stats", "训练统计"]] : [])].map(([id, label]) => `<button class="practice-tab ${activeTab === id ? "active" : ""}" data-practice-tab="${id}" role="tab">${label}</button>`).join("")}
     </div>
-    ${activeTab === "wrongbook" ? renderWrongBook() : activeTab === "stats" ? renderPracticeStats() : activeTab === "papers" ? renderPaperLibrary() : renderPracticeOverview(stats)}
+    ${activeTab === "wrongbook" ? renderWrongBook() : activeTab === "stats" ? renderPracticeStats() : activeTab === "papers" ? renderPaperLibrary() : renderPracticeOverview()}
   `);
 }
 
-function renderPracticeOverview(stats) {
+function renderPracticeOverview() {
   const weakest = getWeakestCategory();
   return `
-    <div class="practice-continue"><span>${weakest ? `建议练习：${weakest.name}` : "开始一次混合测评，了解当前水平"}</span><button class="btn primary" data-start-category="${weakest?.id || "mixed"}">${weakest ? "开始专项" : "开始测评"}</button></div>
-    <section class="practice-section">
-      <div class="practice-section-head"><div><h2>专项训练</h2></div></div>
+    <section class="practice-section no-top-gap">
+      <div class="practice-section-head"><div><h2>专项训练</h2></div><button class="btn small" data-start-category="mixed">混合练习</button></div>
       <div class="category-grid">
         ${PRACTICE_CATEGORIES.map(category => {
           const categoryStats = statsForCategory(category.id);
           const categoryCount = questionBank().filter(question => question.category === category.id).length;
+          const recommended = weakest?.id === category.id;
           return `<article class="category-card">
-            <div class="category-top"><span class="category-glyph">${category.short}</span><span class="difficulty-dots">${categoryStats.answered ? `${categoryStats.accuracy}%` : "未测"}</span></div>
-            <h3>${category.name}</h3><p>${category.description}</p>
-            <div class="category-meta"><span>${categoryCount} 道可练</span><span>建议 ${category.targetSeconds}s/题</span></div>
-            <button class="btn small" data-start-category="${category.id}" ${categoryCount ? "" : "disabled"}>${categoryCount ? "开始专项" : communityBankStatus === "loading" ? "题库载入中" : "暂无可练题"}</button>
+            <div class="category-top"><span class="category-glyph" aria-hidden="true">${category.short}</span>${recommended ? '<span class="category-recommendation">建议练习</span>' : ""}</div>
+            <h3>${category.name}</h3>
+            <p class="category-count"><strong>${categoryCount}</strong> 道可练</p>
+            <dl class="category-metrics">
+              <div><dt>正确率</dt><dd>${categoryStats.answered ? `${categoryStats.accuracy}%` : "未练习"}</dd></div>
+              <div><dt>建议用时</dt><dd>${category.targetSeconds} 秒/题</dd></div>
+            </dl>
+            <button class="btn small${recommended ? " primary" : ""}" data-start-category="${category.id}" aria-label="开始${category.name}专项训练" ${categoryCount ? "" : "disabled"}>${categoryCount ? "开始专项" : communityBankStatus === "loading" ? "题库载入中" : "暂无可练题"}</button>
           </article>`;
         }).join("")}
       </div>
