@@ -92,6 +92,7 @@ const initialState = {
   jobs: [],
   pipelineFilters: { query: "", company: "全部公司", status: "全部进度", processResult: "全部环节状态", scope: "active" },
   applications: [],
+  reminderCompletions: {},
   projects: [],
   dataSync: null,
   tasks: {
@@ -187,6 +188,7 @@ const workspaceSync = new WorkspaceSync({
   onStatus: status => { cloudSyncStatus = status; updateSyncStatus(); },
 });
 let toastTimer;
+let homeAgendaView = "pending";
 let pendingWorkspaceImport = null;
 let radarJobs = [...FALLBACK_RADAR_JOBS];
 let radarSourceStatus = JOB_SOURCES.map(source => ({ ...source, state: "loading", count: 0, checkedAt: "" }));
@@ -204,6 +206,7 @@ function restoreState(saved) {
     profile: { ...initialState.profile, ...saved.profile },
     jdContext: { ...initialState.jdContext, ...saved.jdContext },
     tasks: { ...initialState.tasks, ...saved.tasks },
+    reminderCompletions: { ...initialState.reminderCompletions, ...saved.reminderCompletions },
     resumeDocuments: saved.resumeDocuments || [],
     answerBank: saved.answerBank || initialState.answerBank,
     applicationDrafts: saved.applicationDrafts || [],
@@ -734,6 +737,7 @@ function workspaceReminders() {
       reminders.push({
         id: `follow-${app.id}`,
         applicationId: app.id,
+        stage: app.status,
         date,
         title: `${job.company}：${app.next || applicationNextAction(app.status)}`,
         meta: `${applicationStageLabel(app.status)} / ${formatReminderTiming(date)}`,
@@ -744,6 +748,7 @@ function workspaceReminders() {
       reminders.push({
         id: `missing-${app.id}`,
         applicationId: app.id,
+        stage: app.status,
         date: null,
         title: `${job.company}：补充${applicationStageLabel(app.status)}时间`,
         meta: "未设置提醒日期",
@@ -756,7 +761,7 @@ function workspaceReminders() {
     .filter(record => !record.superseded && record.status === "scheduled")
     .forEach(record => {
       const date = parseCalendarDate(record.date);
-      if (!date || daysFromToday(date) > 14 || daysFromToday(date) < -1) return;
+      if (!date || daysFromToday(date) > 14) return;
       reminders.push({
         id: `interview-${record.id}`,
         interviewRecordId: record.id,
@@ -782,7 +787,43 @@ function workspaceReminders() {
         priority: daysFromToday(date) <= 2 ? 0 : 3
       });
     });
-  return reminders.sort((a, b) => a.priority - b.priority || (a.date?.getTime() ?? Number.MAX_SAFE_INTEGER) - (b.date?.getTime() ?? Number.MAX_SAFE_INTEGER));
+  return reminders
+    .map(reminder => ({ ...reminder, key: JSON.stringify([reminder.id, reminder.date?.toISOString() || "", reminder.stage || "", reminder.title]) }))
+    .filter(reminder => !state.reminderCompletions[reminder.key])
+    .sort((a, b) => a.priority - b.priority || (a.date?.getTime() ?? Number.MAX_SAFE_INTEGER) - (b.date?.getTime() ?? Number.MAX_SAFE_INTEGER));
+}
+
+function setReminderCompleted(key, completed) {
+  if (!hasPrivateAccess()) return;
+  if (completed) {
+    const reminder = workspaceReminders().find(item => item.key === key);
+    if (!reminder) return;
+    state.reminderCompletions[key] = { ...reminder, date: reminder.date?.toISOString() || "", completedAt: new Date().toISOString() };
+  } else {
+    delete state.reminderCompletions[key];
+  }
+  saveState(completed ? "待办已完成，可在“已完成”中撤销" : "已撤销完成；仍有效的待办会重新显示");
+}
+
+function renderHomeAgenda(reminders) {
+  const completed = Object.values(state.reminderCompletions).sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+  const showingCompleted = homeAgendaView === "completed";
+  const visible = showingCompleted ? completed : reminders;
+  const overdue = reminders.filter(item => item.date && daysFromToday(item.date) < 0).length;
+  return `
+    <div class="home-section-head"><div><h2>接下来 14 天</h2><p>${reminders.length} 件待办${overdue ? ` · ${overdue} 件逾期` : ""} · 含未处理的过期事项</p></div><button class="text-action" data-view="pipeline">管理日期</button></div>
+    <div class="home-agenda-tabs" aria-label="待办筛选">
+      <button data-agenda-view="pending" aria-pressed="${!showingCompleted}">待办 ${reminders.length}</button>
+      <button data-agenda-view="completed" aria-pressed="${showingCompleted}">已完成 ${completed.length}</button>
+    </div>
+    <p class="home-agenda-help">勾选表示此事已处理；笔面结果请在投递记录中更新。</p>
+    <div class="home-agenda-list">
+      ${visible.map(reminder => `<div class="home-agenda-row ${showingCompleted ? "is-completed" : ""}">
+        <label class="agenda-check"><input type="checkbox" data-reminder-key="${escapeHtml(reminder.key)}" ${showingCompleted ? "checked" : ""} aria-label="${showingCompleted ? "撤销完成" : "完成待办"}：${escapeHtml(reminder.title)}"></label>
+        <span class="agenda-time ${!showingCompleted && reminder.priority <= 1 ? "urgent" : ""}">${showingCompleted ? "已完成" : formatReminderTiming(reminder.date)}</span>
+        <button class="agenda-detail" ${workspaceActionAttribute(reminder)}><span><strong>${escapeHtml(reminder.title)}</strong><small>${showingCompleted ? `${escapeHtml(new Date(reminder.completedAt).toLocaleDateString("zh-CN"))} 完成 · ` : ""}${escapeHtml(reminder.meta.split(" / ")[0])}</small></span><span class="agenda-arrow">查看</span></button>
+      </div>`).join("") || `<div class="home-inline-empty"><strong>${showingCompleted ? "还没有已完成的待办" : "当前待办已清空"}</strong><span>${showingCompleted ? "勾选后的事项会保留在这里，也可以取消勾选撤销完成。" : "新的提醒会根据投递和笔面安排自动出现。"}</span></div>`}
+    </div>`;
 }
 
 function primaryWorkspaceAction(reminders) {
@@ -1272,10 +1313,7 @@ function renderHome() {
     </section>
     <div class="home-main-grid">
       <section class="home-agenda panel">
-        <div class="home-section-head"><div><h2>接下来 14 天</h2><p>${reminders.length ? `${reminders.length} 件需要留意的事` : "目前没有临近安排"}</p></div><button class="text-action" data-view="pipeline">管理日期</button></div>
-        <div class="home-agenda-list">
-          ${reminders.slice(0, 4).map(reminder => `<button class="home-agenda-row" ${workspaceActionAttribute(reminder)}><span class="agenda-time ${reminder.priority <= 1 ? "urgent" : ""}">${formatReminderTiming(reminder.date)}</span><span><strong>${escapeHtml(reminder.title)}</strong><small>${escapeHtml(reminder.meta.split(" / ")[0])}</small></span><span class="agenda-arrow">查看</span></button>`).join("") || `<div class="home-inline-empty"><strong>暂时没有临近提醒</strong><span>在求职进度中填写提醒日期后，这里会自动出现。</span></div>`}
-        </div>
+        ${renderHomeAgenda(reminders)}
       </section>
       <section class="home-module-overview panel" aria-labelledby="home-module-title">
         <div class="home-section-head"><div><h2 id="home-module-title">模块进展</h2><p>点击一行直接继续处理</p></div></div>
@@ -3021,6 +3059,12 @@ document.addEventListener("click", (event) => {
     requirePrivateAccess();
     return;
   }
+  const agendaView = event.target.closest("[data-agenda-view]");
+  if (agendaView) {
+    homeAgendaView = agendaView.dataset.agendaView === "completed" ? "completed" : "pending";
+    render();
+    return;
+  }
   const homeRoute = event.target.closest("[data-home-route]");
   if (homeRoute) {
     const route = homeRoute.dataset.homeRoute;
@@ -3791,6 +3835,11 @@ document.addEventListener("change", (event) => {
   const publicInput = event.target.closest("#cloud-login-form") || event.target.matches("[data-question-answer],#radar-industry,#radar-batch,#radar-link,#radar-inbox,#radar-sort");
   if (!publicInput && !hasPrivateAccess()) { requirePrivateAccess(); return; }
   const epoch = authEpoch;
+  if (event.target.matches("[data-reminder-key]")) {
+    setReminderCompleted(event.target.dataset.reminderKey, event.target.checked);
+    render();
+    return;
+  }
   if (event.target.id === "workspace-import") {
     const file = event.target.files?.[0];
     if (!file) return;

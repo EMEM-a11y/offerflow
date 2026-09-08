@@ -35,6 +35,68 @@ function app(t, overrides = {}) {
   return { run:code=>vm.runInContext(code,context),writes };
 }
 
+test("agenda completion survives cloud round trip, leaves progress intact and can be undone", async t => {
+  const handlers = {};
+  const { run, writes } = app(t, { document: { addEventListener: (type, handler) => { handlers[type] = handler; }, querySelector: () => null } });
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"job",company:"测试公司",role:"产品经理"}]; state.applications=[{id:"application",jobId:"job",status:"written",followUpAt:"2026-01-01",next:"完成笔试"}]; var originalApplications=JSON.stringify(state.applications); var reminderKey=workspaceReminders()[0].key;');
+  assert.match(run("renderHomeAgenda(workspaceReminders())"), /1 件逾期/);
+  const change = checked => handlers.change({ target: {
+    checked, dataset: { reminderKey: run("reminderKey") },
+    closest: () => null, matches: selector => selector === "[data-reminder-key]",
+  } });
+  change(true);
+  assert.equal(run("workspaceReminders().length"), 0);
+  assert.equal(run("JSON.stringify(state.applications)"), run("originalApplications"));
+  assert.doesNotMatch(run("renderHomeAgenda(workspaceReminders())"), /件逾期/);
+  assert.doesNotMatch(run("primaryWorkspaceAction(workspaceReminders()).title"), /完成笔试/);
+  await run("workspaceSync.flush()");
+  const saved = writes.at(-1)[1];
+  assert.equal(Object.keys(saved.reminderCompletions).length, 1);
+  run(`state=restoreState(${JSON.stringify(saved)}); homeAgendaView="completed";`);
+  const html = run("renderHomeAgenda(workspaceReminders())");
+  assert.match(html, /撤销完成：测试公司：完成笔试/);
+  assert.match(html, /data-open-application="application"/);
+  assert.equal(run("workspaceReminders().length"), 0);
+  change(false);
+  assert.equal(run("workspaceReminders().length"), 1);
+  assert.equal(run("Object.keys(state.reminderCompletions).length"), 0);
+});
+
+test("rescheduled or new-stage reminders reappear without losing completed history", async t => {
+  const { run } = app(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"job",company:"测试公司",role:"产品经理"}]; state.applications=[{id:"application",jobId:"job",status:"written",followUpAt:"2026-01-01",next:"联系招聘方"}]; var key=workspaceReminders()[0].key; setReminderCompleted(key,true);');
+  run('state.applications[0].followUpAt="2026-01-02";');
+  assert.equal(run("workspaceReminders().length"), 1);
+  run('state.applications[0].followUpAt="2026-01-01"; state.applications[0].status="interview_1";');
+  assert.equal(run("workspaceReminders().length"), 1);
+  run('state.applications[0].status="written"; state.applications[0].next="补交材料";');
+  assert.equal(run("workspaceReminders().length"), 1);
+  run('state.applications[0].archivedAt="2026-01-03"; homeAgendaView="completed";');
+  assert.equal(run("workspaceReminders().length"), 0);
+  assert.match(run("renderHomeAgenda(workspaceReminders())"), /联系招聘方/);
+  run('setReminderCompleted(key,false);');
+  assert.equal(run("workspaceReminders().length"), 0, "undo must not resurrect an archived application");
+});
+
+test("older pending interviews remain actionable and completions stay account scoped", async t => {
+  const { run } = app(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.interviewRecords=[{id:"record",company:"测试公司",role:"产品经理",round:"一面",date:"2026-01-01",status:"scheduled"}];');
+  assert.equal(run("workspaceReminders().length"), 1);
+  run('setReminderCompleted(workspaceReminders()[0].key,true);');
+  assert.equal(run("workspaceReminders().length"), 0);
+  assert.equal(run("state.interviewRecords[0].status"), "scheduled");
+  await run("workspaceSync.flush()");
+  await run('applyCloudUser({id:"B"})');
+  assert.equal(run("Object.keys(state.reminderCompletions).length"), 0);
+  assert.equal(run("Object.keys(restoreState({}).reminderCompletions).length"), 0);
+  await run("applyCloudUser(null)");
+  run('setReminderCompleted("unauthorized",true);');
+  assert.equal(run("Object.keys(state.reminderCompletions).length"), 0);
+});
+
 test("radar application can edit job details and persist without changing public jobs or progress", async t=>{
   const handlers = {};
   const {run,writes}=app(t, {
