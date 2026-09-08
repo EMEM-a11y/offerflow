@@ -253,6 +253,34 @@ function parsedHttpUrl(value) {
   }
 }
 
+function recruitmentHomepage(value) {
+  const url = parsedHttpUrl(value);
+  if (!url) return "";
+  const host = url.hostname.toLowerCase();
+  url.search = "";
+  url.hash = "";
+
+  if (host === "jobs.smartrecruiters.com" || host === "jobs.lever.co") {
+    const companyPath = url.pathname.split("/").filter(Boolean)[0];
+    if (!companyPath) return "";
+    url.pathname = `/${companyPath}`;
+    return url.href.replace(/\/$/, "");
+  }
+
+  if (host === "app.mokahr.com" || host === "wecruit.hotjob.cn") {
+    return url.href.replace(/\/$/, "");
+  }
+
+  url.pathname = "/";
+  return url.href;
+}
+
+export function companyCareerUrl(jobs) {
+  const candidates = (Array.isArray(jobs) ? jobs : [jobs]).filter(Boolean);
+  const verified = candidates.find(job => ["verified", "corrected"].includes(job.linkStatus) && parsedHttpUrl(job.applyUrl));
+  return verified ? recruitmentHomepage(verified.applyUrl) : "";
+}
+
 function canonicalRecruitmentUrl(value) {
   const url = parsedHttpUrl(value);
   if (!url) return "";

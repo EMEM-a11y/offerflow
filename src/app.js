@@ -1,6 +1,6 @@
 import { PRACTICE_CATEGORIES, PRACTICE_PAPERS, SEED_QUESTIONS, categoryById, validateImportedQuestions } from "./question-bank.js";
 import { COMMUNITY_BANK_SOURCE, createCommunityPaper, loadCommunityQuestionBank } from "./community-question-bank.js";
-import { FALLBACK_RADAR_JOBS, INDUSTRY_GROUPS, JOB_REFRESH_WORKFLOW_URL, JOB_ROLE_CATEGORIES, JOB_SOURCES, jobRoleCategories, loadRadarJobs } from "./job-radar.js";
+import { FALLBACK_RADAR_JOBS, INDUSTRY_GROUPS, JOB_REFRESH_WORKFLOW_URL, JOB_ROLE_CATEGORIES, JOB_SOURCES, companyCareerUrl, jobRoleCategories, loadRadarJobs } from "./job-radar.js";
 import { APPLICATION_RULES, APPLICATION_RULES_UPDATED_AT } from "./application-rules.js";
 import { cloudConfigured, captchaSiteKey, currentCloudUser, loadCloudWorkspace, saveCloudWorkspace, sendLoginLink, signOutCloud, watchCloudAuth } from "./cloud.js";
 import { WorkspaceSync } from "./workspace-sync.js";
@@ -1943,8 +1943,6 @@ function renderRadarDetail(job, filteredJobs = visibleRadarJobs()) {
   const relatedApplications = companyApplications(job.company);
   const bookmarked = state.radarActivity.savedJobIds.includes(job.id);
   const hidden = state.radarActivity.hiddenJobIds.includes(job.id);
-  const link = safeExternalUrl(job.applyUrl);
-  const linkMeta = applyLinkMeta(link);
   const linkState = radarLinkState(job);
   const queued = state.companyReviewQueue.includes(job.company);
   const diagnosis = state.companyDiagnoses[job.company];
@@ -1953,10 +1951,11 @@ function renderRadarDetail(job, filteredJobs = visibleRadarJobs()) {
   const keywords = analyzedJob ? extractKeywords(analyzedJob.jd, analyzedJob.tags) : [];
   const gaps = analyzedJob ? getGaps(analyzedJob) : [];
   const companyJobs = filteredJobs.filter(item => companyKeysMatch(item.company, job.company));
+  const companyLink = safeExternalUrl(companyCareerUrl(radarJobs.filter(item => companyKeysMatch(item.company, job.company))));
   return `
     <div class="detail-company-row">
       <div><div class="detail-eyebrow"><span>${displayJobText(job.cohort)}</span><span>${displayJobText(job.batch)}</span><span>${displayJobText(job.industry)}</span></div><h2>${displayJobText(job.company)}</h2><p class="detail-program">${displayJobText(job.program || "校园招聘")}</p></div>
-      <div class="detail-primary-actions"><button class="btn" data-toggle-radar-save="${job.id}">${bookmarked ? "取消收藏" : "收藏"}</button>${link ? `<a class="btn primary" data-radar-open="${job.id}" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkState.action || linkMeta.action)}</a>` : `<button class="btn" disabled>${escapeHtml(linkState.action)}</button>`}</div>
+      <div class="detail-primary-actions"><button class="btn" data-toggle-radar-save="${job.id}">${bookmarked ? "取消收藏" : "收藏"}</button>${companyLink ? `<a class="btn primary" href="${escapeHtml(companyLink)}" target="_blank" rel="noopener noreferrer" aria-label="打开${displayJobText(job.company)}招聘官网">公司招聘官网 ↗</a>` : `<button class="btn" disabled>招聘官网待核验</button>`}</div>
     </div>
     <div class="detail-facts"><div><span>工作地点</span><strong>${displayJobText(job.location)}</strong></div><div><span>截止时间</span><strong>${displayJobText(job.deadline)}</strong></div><div><span>信息来源</span><strong>${job.confirmedBy > 1 ? `${job.confirmedBy} 个来源` : "1 个来源"}</strong></div></div>
     <section class="preference-match">
@@ -1966,7 +1965,7 @@ function renderRadarDetail(job, filteredJobs = visibleRadarJobs()) {
     <section class="job-detail-section"><div class="section-heading-line"><h3>符合筛选的具体岗位</h3><span>${companyJobs.length} 个</span></div><div class="opening-list">${companyJobs.slice(0, 80).map(item => {
       const itemLink = safeExternalUrl(item.applyUrl);
       const itemStatus = radarJobStatus(item);
-      return `<div><span><strong>${displayJobText(item.role)}</strong><small>${displayJobText(item.location)} · ${escapeHtml(itemStatus.label)}</small></span>${itemLink ? `<a data-radar-open="${item.id}" href="${escapeHtml(itemLink)}" target="_blank" rel="noopener noreferrer">官网投递</a>` : `<em>入口待补</em>`}</div>`;
+      return `<div><span><strong>${displayJobText(item.role)}</strong><small>${displayJobText(item.location)} · ${escapeHtml(itemStatus.label)}</small></span>${itemLink ? `<a data-radar-open="${item.id}" href="${escapeHtml(itemLink)}" target="_blank" rel="noopener noreferrer" aria-label="查看${displayJobText(item.role)}岗位详情">查看岗位 ↗</a>` : `<em>岗位链接待补</em>`}</div>`;
     }).join("")}</div>${companyJobs.length > 80 ? `<p class="application-rule-note">当前显示前 80 个岗位，可用上方岗位方向、城市或关键词继续缩小范围。</p>` : ""}</section>
     <section class="jd-analysis-box ${analyzedJob ? "ready" : ""}">
       <div><span>JD 分析</span><h3>${analyzedJob ? "JD 关键词" : "补充具体岗位 JD"}</h3><p>${analyzedJob ? `提取 ${keywords.length} 个关键词 · ${gaps.length} 项简历补充提示` : "粘贴具体岗位描述，提取关键词并查看简历待补项。"}</p></div>

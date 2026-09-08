@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { SEED_QUESTIONS, PRACTICE_PAPERS, validateImportedQuestions } from "../src/question-bank.js";
-import { JOB_REFRESH_WORKFLOW_URL, JOB_ROLE_CATEGORIES, jobRoleCategories, validateRadarJobLinks } from "../src/job-radar.js";
+import { JOB_REFRESH_WORKFLOW_URL, JOB_ROLE_CATEGORIES, companyCareerUrl, jobRoleCategories, validateRadarJobLinks } from "../src/job-radar.js";
 import { prepareSnapshot } from "../scripts/update-jobs.mjs";
 
 test("public question IDs, answers, stems and local images are complete", () => {
@@ -49,6 +49,28 @@ test("known company domains and shared recruitment tenants cannot be assigned to
   assert.equal(jobs[3].linkStatus, "verified");
   assert.equal(jobs[4].linkStatus, "verified");
   assert.equal(jobs[5].linkStatus, "verified");
+});
+
+test("company career links are separate from concrete job links", () => {
+  assert.equal(companyCareerUrl({
+    applyUrl: "https://join.qq.com/post_detail.html?postid=123",
+    linkStatus: "verified",
+  }), "https://join.qq.com/");
+  assert.equal(companyCareerUrl({
+    applyUrl: "https://app.mokahr.com/campus_apply/megviihr/38642#/job/abc",
+    linkStatus: "verified",
+  }), "https://app.mokahr.com/campus_apply/megviihr/38642");
+  assert.equal(companyCareerUrl({
+    applyUrl: "https://jobs.smartrecruiters.com/HoYoverse/123-product-manager",
+    linkStatus: "verified",
+  }), "https://jobs.smartrecruiters.com/HoYoverse");
+  assert.equal(companyCareerUrl({
+    applyUrl: "https://unknown.example/jobs/123",
+    linkStatus: "source",
+  }), "");
+  const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(appSource, /公司招聘官网 ↗/);
+  assert.match(appSource, /查看岗位 ↗/);
 });
 
 test("updater rejects empty, changed and unexpectedly shrunken sources", () => {
