@@ -1,6 +1,6 @@
 import { PRACTICE_CATEGORIES, PRACTICE_PAPERS, SEED_QUESTIONS, categoryById, validateImportedQuestions } from "./question-bank.js";
 import { COMMUNITY_BANK_SOURCE, createCommunityPaper, loadCommunityQuestionBank } from "./community-question-bank.js";
-import { FALLBACK_RADAR_JOBS, INDUSTRY_GROUPS, JOB_REFRESH_WORKFLOW_URL, JOB_SOURCES, loadRadarJobs } from "./job-radar.js";
+import { FALLBACK_RADAR_JOBS, INDUSTRY_GROUPS, JOB_REFRESH_WORKFLOW_URL, JOB_ROLE_CATEGORIES, JOB_SOURCES, jobRoleCategories, loadRadarJobs } from "./job-radar.js";
 import { APPLICATION_RULES, APPLICATION_RULES_UPDATED_AT } from "./application-rules.js";
 import { cloudConfigured, captchaSiteKey, currentCloudUser, loadCloudWorkspace, saveCloudWorkspace, sendLoginLink, signOutCloud, watchCloudAuth } from "./cloud.js";
 import { WorkspaceSync } from "./workspace-sync.js";
@@ -68,7 +68,7 @@ const initialState = {
   activeApplicationDraft: null,
   jobView: "radar",
   ruleFilters: { query: "" },
-  jobFilters: { query: "", industry: "互联网/科技", batch: "全部批次", linkMode: "可直接投递", inbox: "全部岗位", sort: "偏好优先", industryFocusInitialized: true },
+  jobFilters: { query: "", roleCategory: "产品/项目", industry: "互联网/科技", batch: "全部批次", linkMode: "可直接投递", inbox: "全部岗位", sort: "偏好优先", industryFocusInitialized: true },
   radarActivity: {
     schemaVersion: 1,
     baselineInitialized: false,
@@ -1829,7 +1829,7 @@ function selectRadarJob(jobId) {
   markRadarViewed(jobId);
   document.querySelectorAll("[data-radar-shell]").forEach(element => element.classList.toggle("active", element.dataset.radarShell === jobId));
   const detail = document.querySelector("#job-detail");
-  if (detail) detail.innerHTML = renderRadarDetail(job);
+  if (detail) detail.innerHTML = renderRadarDetail(job, visibleRadarJobs());
   const detailTitle = document.querySelector(".radar-detail-panel .radar-pane-title span");
   if (detailTitle) detailTitle.textContent = job.company;
   updateRadarActivityUi(job);
@@ -1844,6 +1844,7 @@ function visibleRadarJobs({ applyInbox = true } = {}) {
       const haystack = `${job.company} ${job.role} ${job.program} ${job.location} ${job.industry}`.toLowerCase();
       const hidden = state.radarActivity.hiddenJobIds.includes(job.id);
       const matchesBase = (!query || haystack.includes(query))
+        && (filters.roleCategory === "全部方向" || jobRoleCategories(job).includes(filters.roleCategory))
         && (filters.industry === "全部行业" || job.industry === filters.industry)
         && (filters.batch === "全部批次" || job.batch === filters.batch)
         && (filters.linkMode !== "可直接投递" || Boolean(safeExternalUrl(job.applyUrl)))
@@ -1868,11 +1869,31 @@ function visibleRadarJobs({ applyInbox = true } = {}) {
     });
 }
 
+function groupRadarJobsByCompany(jobs) {
+  const groups = new Map();
+  jobs.forEach(job => {
+    const key = normalizeCompanyKey(job.company) || job.company;
+    if (!groups.has(key)) groups.set(key, { company: job.company, jobs: [] });
+    groups.get(key).jobs.push(job);
+  });
+  return [...groups.values()];
+}
+
+function companyRadarStatus(jobs) {
+  if (jobs.some(job => companyApplications(job.company).length)) return { label: "该公司已投", className: "applied" };
+  const newCount = jobs.filter(job => state.radarActivity.newJobIds.includes(job.id) && !state.radarActivity.viewedAt[job.id]).length;
+  if (newCount) return { label: `${newCount} 个新增`, className: "new" };
+  const unread = jobs.filter(job => !state.radarActivity.viewedAt[job.id]).length;
+  if (unread) return { label: `${unread} 个未看`, className: "unread" };
+  return { label: "已看", className: "viewed" };
+}
+
 function renderJobRadar() {
   const stats = radarStats();
   const baseJobs = visibleRadarJobs({ applyInbox: false });
   const inboxStats = radarInboxStats(baseJobs);
   const jobs = visibleRadarJobs();
+  const companyGroups = groupRadarJobsByCompany(jobs);
   const selected = jobs.find(job => job.id === state.selectedRadarJob) || jobs[0];
   const industries = INDUSTRY_GROUPS.filter(industry => radarJobs.some(job => job.industry === industry));
   const batches = [...new Set(radarJobs.map(job => job.batch).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
@@ -1897,43 +1918,41 @@ function renderJobRadar() {
         <button data-open-pipeline-from-radar><span>投递记录</span><strong>${state.applications.length}</strong></button>
       </div>
       <div class="radar-toolbar">
+        <label><span>岗位方向</span><select id="radar-role-category">${JOB_ROLE_CATEGORIES.map(value => `<option ${state.jobFilters.roleCategory === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
         <label><span>行业</span><select id="radar-industry"><option>全部行业</option>${industries.map(value => `<option ${state.jobFilters.industry === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
         <label><span>招聘批次</span><select id="radar-batch"><option>全部批次</option>${batches.map(value => `<option ${state.jobFilters.batch === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
         <label><span>投递入口</span><select id="radar-link"><option value="可直接投递" ${state.jobFilters.linkMode === "可直接投递" ? "selected" : ""}>有可用链接</option><option ${state.jobFilters.linkMode === "仅官网已核验" ? "selected" : ""}>仅官网已核验</option><option ${state.jobFilters.linkMode === "全部线索" ? "selected" : ""}>全部线索</option></select></label>
         <label><span>浏览状态</span><select id="radar-inbox">${["全部岗位", "新增", "未看", "已看", "已收藏", "有投递记录", "已隐藏"].map(value => `<option ${state.jobFilters.inbox === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
         <label><span>排序方式</span><select id="radar-sort">${["偏好优先", "最新收录", "公司名称"].map(value => `<option ${state.jobFilters.sort === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
       </div>
-      <div class="radar-result-meta"><span id="radar-result-count">显示前 ${Math.min(200, jobs.length)} / 共 ${jobs.length} 条</span><span>岗位池 ${radarJobs.length.toLocaleString("zh-CN")} 条，${stats.companies.toLocaleString("zh-CN")} 家公司 · ${stats.verified.toLocaleString("zh-CN")} 条官方域名已核验 · ${stats.blocked.toLocaleString("zh-CN")} 条异常链接已暂停${state.jobFilters.inbox === "新增" && inboxStats.newCount ? ` <button class="text-action" data-action="clear-new-batch">标记已处理</button>` : ""}</span></div>
+      <div class="radar-result-meta"><span id="radar-result-count">共 ${companyGroups.length} 家公司 · ${jobs.length} 个岗位</span><span>岗位池 ${radarJobs.length.toLocaleString("zh-CN")} 条，${stats.companies.toLocaleString("zh-CN")} 家公司 · ${stats.verified.toLocaleString("zh-CN")} 条官方域名已核验 · ${stats.blocked.toLocaleString("zh-CN")} 条异常链接已暂停${state.jobFilters.inbox === "新增" && inboxStats.newCount ? ` <button class="text-action" data-action="clear-new-batch">标记已处理</button>` : ""}</span></div>
     </section>
     <div class="job-radar-layout">
-      <section class="panel radar-list-panel"><div class="radar-pane-title"><strong>岗位列表</strong><span>${state.jobFilters.sort}</span></div><div class="job-list" id="job-list">${renderJobRows(jobs.slice(0, 200))}</div></section>
-      <section class="panel radar-detail-panel"><div class="radar-pane-title"><strong>岗位详情</strong><span>${selected ? displayJobText(selected.company) : "未选择"}</span></div><div class="detail-stage" id="job-detail">${selected ? renderRadarDetail(selected) : `<div class="large-empty"><strong>没有符合条件的岗位</strong><p>减少筛选条件后再试。</p></div>`}</div></section>
+      <section class="panel radar-list-panel"><div class="radar-pane-title"><strong>公司列表</strong><span>${state.jobFilters.sort}</span></div><div class="job-list" id="job-list">${renderCompanyRows(companyGroups.slice(0, 200))}</div></section>
+      <section class="panel radar-detail-panel"><div class="radar-pane-title"><strong>公司岗位</strong><span>${selected ? displayJobText(selected.company) : "未选择"}</span></div><div class="detail-stage" id="job-detail">${selected ? renderRadarDetail(selected, jobs) : `<div class="large-empty"><strong>没有符合条件的岗位</strong><p>减少筛选条件后再试。</p></div>`}</div></section>
     </div>
   `;
 }
 
-function renderJobRows(jobs) {
-  return jobs.map(job => {
-    const roles = preferredRoles(job);
-    const status = radarJobStatus(job);
-    const saved = state.radarActivity.savedJobIds.includes(job.id);
-    const fit = radarFit(job);
-    const linkState = radarLinkState(job);
-    const positives = fit.signals.filter(item => item.met).slice(0, 2);
-    return `<article class="radar-row-shell ${state.selectedRadarJob === job.id ? "active" : ""} ${["viewed", "new-viewed", "applied"].includes(status.className) ? "is-viewed" : ""}" data-radar-shell="${job.id}">
-      <button class="radar-row" data-radar-job="${job.id}">
-        <span class="radar-row-top"><strong>${displayJobText(job.company)}</strong><span class="radar-status ${status.className}" data-radar-status="${job.id}">${status.label}</span></span>
-        <span class="radar-row-title">${displayJobText(job.program || `${job.cohort}${job.batch}`)}</span>
-        <span class="radar-role-line">${roles.slice(0, 2).map(role => displayJobText(role)).join(" / ")}${roles.length > 2 ? ` 等 ${roles.length} 个方向` : ""}</span>
-        <span class="radar-fit-line">${positives.length ? positives.map(item => `<em>${displayJobText(item.label)}</em>`).join("") : `<em>需要打开官网细看</em>`}</span>
-        <span class="row-meta"><span>${displayJobText(job.location)}</span><span>${displayJobText(job.batch)}</span><span>${linkState.label}</span></span>
+function renderCompanyRows(groups) {
+  return groups.map(group => {
+    const selected = group.jobs.find(job => job.id === state.selectedRadarJob) || group.jobs[0];
+    const active = group.jobs.some(job => job.id === state.selectedRadarJob);
+    const status = companyRadarStatus(group.jobs);
+    const roles = [...new Set(group.jobs.map(job => job.role).filter(Boolean))];
+    const locations = [...new Set(group.jobs.flatMap(job => job.locations?.length ? job.locations : [job.location]).filter(Boolean))];
+    return `<article class="radar-row-shell ${active ? "active" : ""} ${status.className === "viewed" ? "is-viewed" : ""}" data-radar-shell="${selected.id}">
+      <button class="radar-row" data-radar-job="${selected.id}">
+        <span class="radar-row-top"><strong>${displayJobText(group.company)}</strong><span class="radar-status ${status.className}">${status.label}</span></span>
+        <span class="radar-row-title">符合当前筛选 ${group.jobs.length} 个具体岗位</span>
+        <span class="radar-role-line">${roles.slice(0, 2).map(displayJobText).join(" / ")}${roles.length > 2 ? ` 等 ${roles.length} 个岗位` : ""}</span>
+        <span class="row-meta"><span>${locations.slice(0, 3).map(displayJobText).join(" / ") || "地点待确认"}</span><span>按公司聚合</span></span>
       </button>
-      <button class="radar-save-button ${saved ? "active" : ""}" data-toggle-radar-save="${job.id}" aria-label="${saved ? "取消收藏" : "收藏"}${displayJobText(job.company)}">${saved ? "已收藏" : "收藏"}</button>
     </article>`;
-  }).join("") || `<div class="empty-state">当前筛选下没有岗位。可以清除筛选后重新查看。</div>`;
+  }).join("") || `<div class="empty-state">当前筛选下没有公司。可以切换岗位方向或清除筛选后重新查看。</div>`;
 }
 
-function renderRadarDetail(job) {
+function renderRadarDetail(job, filteredJobs = visibleRadarJobs()) {
   const application = exactRadarApplication(job.id);
   const relatedApplications = companyApplications(job.company);
   const bookmarked = state.radarActivity.savedJobIds.includes(job.id);
@@ -1947,6 +1966,7 @@ function renderRadarDetail(job) {
   const analyzedJob = state.jobs.find(item => item.id === job.id && item.jdSource === "pasted");
   const keywords = analyzedJob ? extractKeywords(analyzedJob.jd, analyzedJob.tags) : [];
   const gaps = analyzedJob ? getGaps(analyzedJob) : [];
+  const companyJobs = filteredJobs.filter(item => companyKeysMatch(item.company, job.company));
   return `
     <div class="detail-company-row">
       <div><div class="detail-eyebrow"><span>${displayJobText(job.cohort)}</span><span>${displayJobText(job.batch)}</span><span>${displayJobText(job.industry)}</span></div><h2>${displayJobText(job.company)}</h2><p class="detail-program">${displayJobText(job.program || "校园招聘")}</p></div>
@@ -1957,7 +1977,11 @@ function renderRadarDetail(job) {
       <div class="section-heading-line"><h3>与你的偏好</h3></div>
       <div class="preference-signals">${fit.signals.slice(0, 3).map(item => `<div class="${item.met ? "met" : "unknown"}"><strong>${item.met ? "符合" : "待核对"}</strong><span>${displayJobText(item.label)}</span></div>`).join("")}</div>
     </section>
-    <section class="job-detail-section"><div class="section-heading-line"><h3>开放方向</h3><span>${job.positions.length || 1} 项</span></div><div class="opening-list">${preferredRoles(job).map(role => `<div><span><strong>${displayJobText(role)}</strong>${radarRoleTerms().some(term => role.includes(term)) ? "<small>符合目标方向</small>" : ""}</span>${link ? `<a data-radar-open="${job.id}" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">查看</a>` : `<em>入口待补</em>`}</div>`).join("")}</div></section>
+    <section class="job-detail-section"><div class="section-heading-line"><h3>符合筛选的具体岗位</h3><span>${companyJobs.length} 个</span></div><div class="opening-list">${companyJobs.slice(0, 80).map(item => {
+      const itemLink = safeExternalUrl(item.applyUrl);
+      const itemStatus = radarJobStatus(item);
+      return `<div><span><strong>${displayJobText(item.role)}</strong><small>${displayJobText(item.location)} · ${escapeHtml(itemStatus.label)}</small></span>${itemLink ? `<a data-radar-open="${item.id}" href="${escapeHtml(itemLink)}" target="_blank" rel="noopener noreferrer">官网投递</a>` : `<em>入口待补</em>`}</div>`;
+    }).join("")}</div>${companyJobs.length > 80 ? `<p class="application-rule-note">当前显示前 80 个岗位，可用上方岗位方向、城市或关键词继续缩小范围。</p>` : ""}</section>
     <section class="jd-analysis-box ${analyzedJob ? "ready" : ""}">
       <div><span>JD 分析</span><h3>${analyzedJob ? "JD 关键词" : "补充具体岗位 JD"}</h3><p>${analyzedJob ? `提取 ${keywords.length} 个关键词 · ${gaps.length} 项简历补充提示` : "粘贴具体岗位描述，提取关键词并查看简历待补项。"}</p></div>
       ${analyzedJob ? `<div class="jd-analysis-tags">${keywords.map(item => `<span>${escapeHtml(item)}</span>`).join("")}</div><button class="btn primary" data-action="sync-jd" data-job-id="${job.id}">同步到简历优化</button>` : `<button class="btn primary" data-analyze-radar="${job.id}">粘贴具体 JD</button>`}
@@ -3453,7 +3477,7 @@ document.addEventListener("click", (event) => {
       state.mobileOpen = false;
       state.jobView = "radar";
       state.selectedRadarJob = linkedJob.id;
-      state.jobFilters = { ...state.jobFilters, query: linkedJob.company, industry: linkedJob.industry, batch: "全部批次", linkMode: "全部线索", inbox: "全部岗位" };
+      state.jobFilters = { ...state.jobFilters, query: linkedJob.company, roleCategory: "全部方向", industry: linkedJob.industry, batch: "全部批次", linkMode: "全部线索", inbox: "全部岗位" };
       markRadarViewed(linkedJob.id);
       saveState();
       render();
@@ -3472,7 +3496,7 @@ document.addEventListener("click", (event) => {
       state.mobileOpen = false;
       state.jobView = "radar";
       state.selectedRadarJob = linkedJob.id;
-      state.jobFilters = { ...state.jobFilters, query: company, industry: "全部行业", batch: "全部批次", linkMode: "全部线索", inbox: "全部岗位" };
+      state.jobFilters = { ...state.jobFilters, query: company, roleCategory: "全部方向", industry: "全部行业", batch: "全部批次", linkMode: "全部线索", inbox: "全部岗位" };
       markRadarViewed(linkedJob.id);
       saveState();
       render();
@@ -3680,6 +3704,7 @@ document.addEventListener("click", (event) => {
     state.jobFilters = {
       ...state.jobFilters,
       query: "",
+      roleCategory: "全部方向",
       industry: "全部行业",
       batch: "全部批次",
       linkMode: "全部线索",
@@ -3694,6 +3719,7 @@ document.addEventListener("click", (event) => {
     const job = radarJobs.find(item => item.id === state.radarActivity.lastViewedJobId);
     if (job) {
       state.jobFilters.query = "";
+      state.jobFilters.roleCategory = "全部方向";
       state.jobFilters.industry = job.industry;
       state.jobFilters.batch = "全部批次";
       state.jobFilters.linkMode = safeExternalUrl(job.applyUrl) ? "可直接投递" : "全部线索";
@@ -3848,7 +3874,7 @@ document.addEventListener("change", (event) => {
     updateLoginRequest();
     return;
   }
-  const publicInput = event.target.closest("#cloud-login-form") || event.target.matches("[data-question-answer],#radar-industry,#radar-batch,#radar-link,#radar-inbox,#radar-sort");
+  const publicInput = event.target.closest("#cloud-login-form") || event.target.matches("[data-question-answer],#radar-role-category,#radar-industry,#radar-batch,#radar-link,#radar-inbox,#radar-sort");
   if (!publicInput && !hasPrivateAccess()) { requirePrivateAccess(); return; }
   const epoch = authEpoch;
   if (event.target.matches("[data-reminder-key]")) {
@@ -3944,7 +3970,8 @@ document.addEventListener("change", (event) => {
     }).catch(() => showToast("录音保存失败，请检查浏览器存储空间"));
     return;
   }
-  if (event.target.id === "radar-industry" || event.target.id === "radar-batch" || event.target.id === "radar-link" || event.target.id === "radar-inbox" || event.target.id === "radar-sort") {
+  if (event.target.id === "radar-role-category" || event.target.id === "radar-industry" || event.target.id === "radar-batch" || event.target.id === "radar-link" || event.target.id === "radar-inbox" || event.target.id === "radar-sort") {
+    state.jobFilters.roleCategory = document.querySelector("#radar-role-category")?.value || "全部方向";
     state.jobFilters.industry = document.querySelector("#radar-industry")?.value || "全部行业";
     state.jobFilters.batch = document.querySelector("#radar-batch")?.value || "全部批次";
     state.jobFilters.linkMode = document.querySelector("#radar-link")?.value || "可直接投递";
@@ -4322,16 +4349,17 @@ document.addEventListener("submit", async (event) => {
 
 function updateRadarResults() {
   const filtered = visibleRadarJobs();
+  const groups = groupRadarJobsByCompany(filtered);
   if (!filtered.some(job => job.id === state.selectedRadarJob)) state.selectedRadarJob = filtered[0]?.id || "";
   const list = document.querySelector("#job-list");
-  if (list) list.innerHTML = renderJobRows(filtered.slice(0, 200));
+  if (list) list.innerHTML = renderCompanyRows(groups.slice(0, 200));
   const detail = document.querySelector("#job-detail");
   const selected = filtered.find(job => job.id === state.selectedRadarJob) || filtered[0];
-  if (detail) detail.innerHTML = selected ? renderRadarDetail(selected) : `<div class="large-empty"><strong>没有符合条件的岗位</strong><p>减少筛选条件后再试。</p></div>`;
+  if (detail) detail.innerHTML = selected ? renderRadarDetail(selected, filtered) : `<div class="large-empty"><strong>没有符合条件的岗位</strong><p>减少筛选条件后再试。</p></div>`;
   const detailTitle = document.querySelector(".radar-detail-panel .radar-pane-title span");
   if (detailTitle) detailTitle.textContent = selected?.company || "未选择";
   const count = document.querySelector("#radar-result-count");
-  if (count) count.textContent = `显示前 ${Math.min(200, filtered.length)} / 共 ${filtered.length} 条`;
+  if (count) count.textContent = `共 ${groups.length} 家公司 · ${filtered.length} 个岗位`;
   updateRadarActivityUi();
   saveState();
 }

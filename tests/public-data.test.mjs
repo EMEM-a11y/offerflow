@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { SEED_QUESTIONS, PRACTICE_PAPERS, validateImportedQuestions } from "../src/question-bank.js";
-import { JOB_REFRESH_WORKFLOW_URL, validateRadarJobLinks } from "../src/job-radar.js";
+import { JOB_REFRESH_WORKFLOW_URL, JOB_ROLE_CATEGORIES, jobRoleCategories, validateRadarJobLinks } from "../src/job-radar.js";
 import { prepareSnapshot } from "../scripts/update-jobs.mjs";
 
 test("public question IDs, answers, stems and local images are complete", () => {
@@ -68,4 +68,16 @@ test("manual job refresh opens the repository workflow over HTTPS", () => {
   assert.match(appSource, /data-modal="job-refresh-info"/);
   assert.match(appSource, /仅仓库管理员可以运行/);
   assert.match(appSource, /普通用户无需操作/);
+});
+
+test("radar groups concrete jobs by company and filters product-related roles", () => {
+  assert.ok(JOB_ROLE_CATEGORIES.includes("产品/项目"));
+  assert.deepEqual(jobRoleCategories({ role: "AI 产品经理" }), ["产品/项目", "技术/研发"]);
+  assert.ok(jobRoleCategories({ role: "用户增长运营" }).includes("运营/增长"));
+  assert.ok(jobRoleCategories({ role: "商业数据分析师" }).includes("数据/分析"));
+  assert.deepEqual(jobRoleCategories({ role: "总裁办公室助理" }), ["其他"]);
+  const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(appSource, /岗位方向/);
+  assert.match(appSource, /groupRadarJobsByCompany/);
+  assert.match(appSource, /符合筛选的具体岗位/);
 });

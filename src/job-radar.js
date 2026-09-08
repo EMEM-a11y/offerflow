@@ -40,6 +40,24 @@ export const INDUSTRY_GROUPS = [
   "其他"
 ];
 
+export const JOB_ROLE_CATEGORIES = ["全部方向", "产品/项目", "运营/增长", "数据/分析", "技术/研发", "设计/创意", "市场/商务", "职能/支持", "其他"];
+
+const JOB_ROLE_CATEGORY_RULES = [
+  ["产品/项目", /产品|项目管理|项目经理|产品策划|产品运营/i],
+  ["运营/增长", /运营|增长|用户|内容|社区|活动|商业化|平台治理/i],
+  ["数据/分析", /数据|分析|商业分析|经营分析|策略|BI\b|SQL/i],
+  ["技术/研发", /研发|开发|工程|算法|机器学习|人工智能|AI\b|测试|架构|运维|安全|后端|前端|客户端|芯片|硬件/i],
+  ["设计/创意", /设计|视觉|交互|UX\b|UI\b|创意|美术|动画/i],
+  ["市场/商务", /市场|营销|品牌|商务|销售|客户|渠道|公关|广告/i],
+  ["职能/支持", /人力|招聘|财务|会计|法务|行政|采购|供应链|审计|风控|合规|战略|管理培训|管培/i],
+];
+
+export function jobRoleCategories(job) {
+  const value = [job?.role, ...(job?.positions || []), job?.program].filter(Boolean).join(" ");
+  const categories = JOB_ROLE_CATEGORY_RULES.filter(([, pattern]) => pattern.test(value)).map(([category]) => category);
+  return categories.length ? categories : ["其他"];
+}
+
 export const FALLBACK_RADAR_JOBS = [
   {
     id: "fallback-baidu-2027",
