@@ -2487,7 +2487,7 @@ function renderPipeline() {
           const radarCompanyMatch = radarJobs.find(item => companyKeysMatch(item.company, job.company));
           return `<tr data-application-row="${app.id}">
             <td><div class="table-company"><strong>${escapeHtml(job.company)}</strong><span class="sync-mini ${app.syncStatus || "local_only"}">${app.syncStatus === "imported" ? "飞书已导入" : app.feishuRecordId ? "飞书已关联" : "工作台本地"}</span></div></td>
-            <td><strong class="table-role">${escapeHtml(job.role)}</strong><span class="table-sub">${escapeHtml(job.location || "地点待确认")}</span><button class="table-link-button" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息">编辑</button></td>
+            <td><div class="table-job-heading"><strong class="table-role" title="${escapeHtml(job.role)}">${escapeHtml(job.role)}</strong><button class="table-link-button table-job-edit" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息">编辑</button></div><span class="table-sub table-job-location" title="${escapeHtml(job.location || "地点待确认")}">${escapeHtml(job.location || "地点待确认")}</span></td>
             <td><select class="table-select stage-${app.status}" data-app-status="${app.id}" aria-label="${escapeHtml(job.company)}当前进度">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}" ${app.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td>
             <td>${renderProcessStateCell(app, interview, job)}</td>
             <td><input class="table-input date" type="date" value="${escapeHtml(app.appliedAt || "")}" data-app-field="appliedAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}投递日期"></td>

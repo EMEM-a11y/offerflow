@@ -686,6 +686,11 @@ button.radar-metric:active { transform: translateY(1px); }
 .table-company { display: grid; gap: 6px; }
 .table-company strong, .table-role { font-size: 10px; line-height: 1.45; }
 .table-role { display: block; }
+.table-job-heading { display: flex; align-items: center; gap: 8px; width: 180px; }
+.table-job-heading .table-role { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table-job-heading .table-job-edit { flex: none; min-width: 28px; min-height: 24px; white-space: nowrap; }
+.table-job-edit:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 4px; }
+.table-job-location { max-width: 180px; margin-top: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .table-sub { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
 .table-input, .table-select { min-height: 31px; padding: 6px 7px; border-color: transparent; background: transparent; font-size: 9px; }
 .table-input:hover, .table-select:hover, .table-input:focus, .table-select:focus { background: var(--panel-muted); border-color: var(--line-strong); }
