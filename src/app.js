@@ -164,13 +164,12 @@ const LEGACY_END_STAGES = [
   ["rejected_resume", "简历未通过"],
   ["rejected_assessment", "测评 / 笔试未通过"],
   ["rejected_interview", "面试未通过"],
-  ["rejected_final", "终面 / 最终未通过"],
-  ["withdrawn", "已放弃"]
+  ["rejected_final", "终面 / 最终未通过"]
 ];
 const APPLICATION_STAGES = [
   ...FUNNEL_STAGES,
   ...FUNNEL_STAGES.map(([value, label]) => [`rejected_at_${value}`, `${label} · 未通过`]),
-  ...FUNNEL_STAGES.map(([value, label]) => [`withdrawn_at_${value}`, `${label} · 主动放弃`]),
+  ["withdrawn", "主动放弃"],
   ...LEGACY_END_STAGES
 ];
 const ASSESSMENT_STAGES = ["assessment", "ai_interview", "written"];
@@ -187,7 +186,7 @@ const INTERVIEW_STAGE_FILTERS = [
   ["interview_more", "加面 / 终面"]
 ];
 const REJECTION_STAGES = APPLICATION_STAGES.filter(([value]) => value.startsWith("rejected_")).map(([value]) => value);
-const WITHDRAWN_STAGES = APPLICATION_STAGES.filter(([value]) => value.startsWith("withdrawn")).map(([value]) => value);
+const WITHDRAWN_STAGES = ["withdrawn", ...FUNNEL_STAGES.map(([value]) => `withdrawn_at_${value}`)];
 const PIPELINE_GROUPS = [
   ["applied", "简历筛选"], ["assessment_group", "测评 / 笔试"],
   ["interview_group", "面试"], ["salary", "谈薪"],
@@ -195,11 +194,12 @@ const PIPELINE_GROUPS = [
 ];
 
 function renderApplicationStageOptions(selected) {
+  if (WITHDRAWN_STAGES.includes(selected)) selected = "withdrawn";
   const groups = [
     ["投递与筛选", ["applied"]], ["测评与笔试", ASSESSMENT_STAGES],
     ["面试轮次", INTERVIEW_STAGES], ["录用", ["salary", "offer_intent", "offer"]],
     ["未通过（选择结束环节）", REJECTION_STAGES.filter(value => value.startsWith("rejected_at_"))],
-    ["主动放弃（选择结束环节）", WITHDRAWN_STAGES.filter(value => value.startsWith("withdrawn_at_"))],
+    ["主动结束", ["withdrawn"]],
     ["历史结束状态（未细分）", LEGACY_END_STAGES.map(([value]) => value)]
   ];
   return groups.map(([label, values]) => `<optgroup label="${label}">${APPLICATION_STAGES.filter(([value]) => values.includes(value)).map(([value, name]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${name}</option>`).join("")}</optgroup>`).join("");
@@ -314,6 +314,7 @@ function normalizeApplicationStatus(status) {
   if (status === "saved" || status === "interested") return "applied";
   if (status === "interview" || status === "interview_pending" || status === "interviewing") return "interview_1";
   if (status === "rejected") return "rejected_resume";
+  if (WITHDRAWN_STAGES.includes(status)) return "withdrawn";
   return APPLICATION_STAGES.some(([value]) => value === status) ? status : "applied";
 }
 
@@ -2743,6 +2744,14 @@ function ensureProcessRecord(app) {
 
 function synchronizeApplicationProcessState(app) {
   const linkedRecords = (state.interviewRecords || []).filter(record => record.applicationId === app.id || record.id === app.interviewRecordId);
+  if (app.status === "withdrawn") {
+    const record = linkedRecords.find(item => item.id === app.interviewRecordId && !item.superseded && ["pending", "waiting"].includes(item.result));
+    if (record) {
+      record.result = "withdrawn";
+      record.status = "completed";
+      record.nextActions = processNextAction(record);
+    }
+  }
   const ended = /^(rejected|withdrawn)_at_(.+)$/.exec(app.status);
   if (ended) {
     linkedRecords.filter(record => stageForProcessRecord(record.round) === ended[2]).forEach(record => {
@@ -2805,7 +2814,7 @@ function syncApplicationFromRecord(record) {
   const recordStage = stageForProcessRecord(record.round);
   if (record.result === "offer") app.status = "offer";
   else if (record.result === "rejected") app.status = rejectionStatusForRecord(record);
-  else if (record.result === "withdrawn") app.status = `withdrawn_at_${recordStage}`;
+  else if (record.result === "withdrawn") app.status = "withdrawn";
   else {
     const currentIndex = FUNNEL_STAGES.findIndex(([status]) => status === app.status);
     const recordIndex = FUNNEL_STAGES.findIndex(([status]) => status === recordStage);
