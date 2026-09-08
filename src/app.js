@@ -1886,7 +1886,6 @@ function companyRadarStatus(jobs) {
 }
 
 function renderJobRadar() {
-  const stats = radarStats();
   const baseJobs = visibleRadarJobs({ applyInbox: false });
   const inboxStats = radarInboxStats(baseJobs);
   const jobs = visibleRadarJobs();
@@ -1899,22 +1898,9 @@ function renderJobRadar() {
       <div class="radar-control-top">
         <div class="radar-search-row">
           <input class="search" id="radar-search" type="search" value="${escapeHtml(state.jobFilters.query)}" placeholder="搜索岗位、公司或城市" aria-label="搜索校招岗位">
-          <button class="btn" data-action="clear-radar-filters">清除</button>
+          <button class="btn" data-action="clear-radar-filters">重置筛选</button>
         </div>
       </div>
-      <div class="radar-quick-filters" aria-label="岗位状态快速筛选">
-        ${[
-          ["全部岗位", "全部岗位", baseJobs.length],
-          ["未看", "当前未看", inboxStats.unread],
-          ["已收藏", "我的收藏", inboxStats.saved]
-        ].map(([value, label, count]) => `<button class="${state.jobFilters.inbox === value ? "active" : ""}" data-inbox-filter="${value}"><span>${label}</span><strong>${count}</strong></button>`).join("")}
-        <button data-open-pipeline-from-radar><span>投递记录</span><strong>${state.applications.length}</strong></button>
-      </div>
-      <details class="radar-advanced"><summary>筛选与偏好</summary><div class="radar-advanced-body">
-        <div class="radar-preference-bar">
-          <div><span>当前偏好</span><strong>${displayJobText(state.profile.targetRole || "目标岗位")} · ${displayJobText(state.profile.targetCity || "目标城市待补")}</strong></div>
-          <button class="text-action" data-modal="profile">修改</button>
-        </div>
       <div class="radar-toolbar">
         <label><span>岗位方向</span><select id="radar-role-category">${JOB_ROLE_CATEGORIES.map(value => `<option ${state.jobFilters.roleCategory === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
         <label><span>行业</span><select id="radar-industry"><option>全部行业</option>${industries.map(value => `<option ${state.jobFilters.industry === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
@@ -1923,8 +1909,21 @@ function renderJobRadar() {
         <label><span>浏览状态</span><select id="radar-inbox">${["全部岗位", "新增", "未看", "已看", "已收藏", "有投递记录", "已隐藏"].map(value => `<option ${state.jobFilters.inbox === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
         <label><span>排序方式</span><select id="radar-sort">${["偏好优先", "最新收录", "公司名称"].map(value => `<option ${state.jobFilters.sort === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
       </div>
-      <div class="radar-source-summary"><span>岗位池 ${radarJobs.length.toLocaleString("zh-CN")} 条，${stats.companies.toLocaleString("zh-CN")} 家公司 · ${stats.verified.toLocaleString("zh-CN")} 条官方域名已核验 · ${stats.blocked.toLocaleString("zh-CN")} 条异常链接已暂停${state.jobFilters.inbox === "新增" && inboxStats.newCount ? ` <button class="text-action" data-action="clear-new-batch">标记已处理</button>` : ""}</span></div></div></details>
-      <div class="radar-result-meta"><span id="radar-result-count">共 ${companyGroups.length} 家公司 · ${jobs.length} 个岗位</span></div>
+        <div class="radar-preference-bar">
+          <div><span>当前偏好</span><strong>${displayJobText(state.profile.targetRole || "目标岗位")} · ${displayJobText(state.profile.targetCity || "目标城市待补")}</strong></div>
+          <button class="text-action" data-modal="profile">修改</button>
+        </div>
+      <div class="radar-filter-footer">
+      <div class="radar-quick-filters" aria-label="岗位状态快速筛选">
+        ${[
+          ["全部岗位", "全部岗位", baseJobs.length],
+          ["未看", "当前未看", inboxStats.unread],
+          ["已收藏", "我的收藏", inboxStats.saved]
+        ].map(([value, label, count]) => `<button class="${state.jobFilters.inbox === value ? "active" : ""}" data-inbox-filter="${value}"><span>${label}</span><strong>${count}</strong></button>`).join("")}
+        <button data-open-pipeline-from-radar><span>投递记录</span><strong>${state.applications.length}</strong></button>
+      </div>
+        <div class="radar-result-meta"><span id="radar-result-count">共 ${companyGroups.length} 家公司 · ${jobs.length} 个岗位</span>${state.jobFilters.inbox === "新增" && inboxStats.newCount ? `<button class="text-action" data-action="clear-new-batch">标记已处理</button>` : ""}</div>
+      </div>
     </section>
     <div class="job-radar-layout ${radarMobileDetail ? "detail-open" : ""}">
       <section class="panel radar-list-panel"><div class="radar-pane-title"><strong>公司列表</strong><span>${state.jobFilters.sort}</span></div><div class="job-list" id="job-list">${renderCompanyRows(companyGroups.slice(0, 200))}</div></section>

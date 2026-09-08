@@ -37,7 +37,11 @@ test("mobile keeps account access; answer sheet fits available width", () => {
 test("page chrome is reduced and source rules stay available on demand", () => {
   const home=app.slice(app.indexOf("function renderHome()"),app.indexOf("function renderPractice"));
   assert.doesNotMatch(home,/home-next-action/);
-  assert.match(app,/class="radar-advanced"/);
+  assert.doesNotMatch(app, /class="radar-advanced"|筛选与偏好/);
+  const radar = app.slice(app.indexOf("function renderJobRadar()"), app.indexOf("function renderCompanyRows"));
+  assert.doesNotMatch(radar, /<details|<summary/);
+  for (const id of ["role-category", "industry", "batch", "link", "inbox", "sort"]) assert.ok(radar.includes('id="radar-' + id + '"'));
+  assert.match(layout, /grid-template-columns: repeat\(6,minmax\(0,1fr\)\)/);
   assert.match(app,/class="rule-details"/);
   assert.match(app,/class="resume-file-priority"/);
   assert.match(app,/handleWorkspaceKeydown\(event, document\)/);

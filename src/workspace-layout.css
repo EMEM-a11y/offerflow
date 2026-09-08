@@ -37,29 +37,34 @@ textarea { resize: vertical; }
 .home-wooden-fish { min-height: 60px; min-width: 168px; }
 .practice-continue { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 0 20px; color: var(--muted); }
 .compact-menu { position: relative; }
-.compact-menu summary, .radar-advanced summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: var(--text-sm); list-style: none; }
-.compact-menu summary::after, .radar-advanced summary::after { content: "⌄"; margin-left: 10px; }
+.compact-menu summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: var(--text-sm); list-style: none; }
+.compact-menu summary::after::after { content: "⌄"; margin-left: 10px; }
 .compact-menu-body { position: absolute; z-index: 5; right: 0; top: calc(100% + 6px); width: 230px; padding: 12px; display: grid; gap: 8px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 .category-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
 .question-prompt, .exam-options .option { font-size: var(--text-lg); line-height: 1.8; }
 .exam-options .option { padding: 16px; min-height: 60px; }
 .answer-sheet-grid { grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); }
 .answer-sheet-grid button { min-height: 40px; min-width: 0; }
-.radar-control-panel { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px 12px; padding: 12px; overflow: visible; }
-.radar-control-top { grid-column: 1; grid-row: 1; display: block; border: 0; min-width: 0; }
-.radar-control-panel .radar-search-row { padding: 0; }
-.radar-advanced { grid-column: 2; grid-row: 1; }
-.radar-advanced-body { position: absolute; right: 0; top: 66px; z-index: 8; width: min(720px, 100%); background: var(--panel-solid); padding: 12px; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
-.radar-control-panel .radar-preference-bar { padding: 8px; border: 0; }
-.radar-control-panel .radar-toolbar { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; padding: 12px 8px; }
+.radar-control-panel { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; padding: 16px 18px; margin-bottom: 16px; overflow: visible; box-shadow: none; }
+.radar-control-top { display: block; border: 0; min-width: 0; }
+.radar-control-panel .radar-search-row { padding: 0; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; }
+.radar-control-panel .radar-search-row .search { min-width: 0; }
+.radar-control-panel .radar-toolbar { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 12px; padding: 0; margin: 0; overflow: visible; }
+.radar-control-panel .radar-toolbar label { display: grid; gap: 5px; min-width: 0; }
 .radar-control-panel .radar-toolbar label:last-child { grid-column: auto; }
-.radar-source-summary { color: var(--muted); font-size: var(--text-xs); padding: 8px; }
-.radar-control-panel .radar-quick-filters { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; border: 0; }
+.radar-control-panel .radar-toolbar select { width: 100%; min-width: 0; min-height: 42px; font-size: var(--text-sm); }
+.radar-control-panel .radar-preference-bar { margin: 0; min-height: 0; padding: 0; border: 0; display: flex; align-items: baseline; gap: 12px; }
+.radar-control-panel .radar-preference-bar > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+.radar-control-panel .radar-preference-bar strong { font-size: var(--text-sm); font-weight: 400; line-height: 1.6; white-space: normal; overflow-wrap: anywhere; }
+.radar-control-panel .radar-preference-bar > div > span { flex-shrink: 0; color: var(--muted); }
+.radar-control-panel .radar-preference-bar > button { flex-shrink: 0; white-space: nowrap; color: var(--accent-ink); }
+.radar-filter-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding-top: 10px; border-top: 1px solid var(--line); }
+.radar-control-panel .radar-quick-filters { display: flex; flex-wrap: wrap; gap: 6px; border: 0; }
 .radar-control-panel .radar-quick-filters button { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px; }
 .radar-control-panel .radar-quick-filters button.active { box-shadow: none; }
 .radar-control-panel .radar-quick-filters strong { font-size: var(--text-sm); }
-.radar-control-panel .radar-result-meta { grid-column: 1 / -1; border: 0; padding: 2px; flex-wrap: wrap; }
-.job-radar-layout { height: max(360px, calc(100dvh - 350px)); grid-template-columns: minmax(260px,.9fr) minmax(300px,1.1fr); gap: 16px; }
+.radar-control-panel .radar-result-meta { border: 0; padding: 0; margin: 0; gap: 8px; flex-wrap: wrap; }
+.job-radar-layout { height: max(360px, calc(100dvh - 480px)); grid-template-columns: minmax(260px,.9fr) minmax(300px,1.1fr); gap: 16px; }
 .radar-list-panel, .radar-detail-panel { height: 100%; min-height: 0; }
 .radar-pane-title { flex-basis: 48px; min-height: 48px; }
 .radar-list-panel .radar-row { padding: 16px 72px 16px 16px; }
@@ -129,6 +134,7 @@ textarea { resize: vertical; }
 .field-help { line-height: 1.65; }
 @media (prefers-color-scheme: dark) { :root { --faint: #aeaeb2; } }
 @media (max-width: 1200px) {
+  .radar-control-panel .radar-toolbar { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .home-main-grid, .resume-layout, .vault-layout, .draft-layout, .prep-workbench, .review-workbench, .interview-record-layout { grid-template-columns: 1fr; }
   .home-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .home-metrics button:nth-child(4) { border-left: 0; }
@@ -163,10 +169,7 @@ textarea { resize: vertical; }
   .home-agenda-row { grid-template-columns: 24px 66px minmax(0,1fr); padding: 12px 6px; }
   .home-agenda-row strong { white-space: normal; }
   .category-grid, .company-grid, .resume-skill-grid, .application-rule-grid, .fact-grid { grid-template-columns: 1fr; }
-  .radar-control-panel { gap: 8px; padding: 10px; }
-  .radar-advanced summary { padding-inline: 8px; }
-  .radar-advanced-body { position: static; width: auto; border: 0; box-shadow: none; padding: 8px 0; }
-  .radar-advanced[open] { grid-column: 1 / -1; grid-row: auto; }
+  .radar-control-panel { gap: 12px; padding: 14px; }
   .radar-control-panel .radar-toolbar { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .radar-control-panel .radar-quick-filters { gap: 4px; }
   .radar-control-panel .radar-quick-filters button { padding: 8px; min-height: 40px; }
