@@ -35,6 +35,70 @@ function app(t, overrides = {}) {
   return { run:code=>vm.runInContext(code,context),writes };
 }
 
+test("radar application can edit job details and persist without changing public jobs or progress", async t=>{
+  const handlers = {};
+  const {run,writes}=app(t, {
+    document:{addEventListener:(type,handler)=>{handlers[type]=handler},querySelector:()=>null},
+    requestAnimationFrame:callback=>callback(),
+    FormData:class { constructor(form) { return Object.entries(form.values); } },
+  });
+  await run('applyCloudUser({id:"A"})');
+  run('showToast = () => {}; saveRadarJob(radarJobs[0]); var originalRadar = JSON.stringify(radarJobs); var originalId = state.applications[0].id; var originalJobId = state.applications[0].jobId; state.applications[0].status = "written"; synchronizeApplicationProcessState(state.applications[0]); state.interviewRecords[0].answerNotes = "保留复盘"; var originalApplication = JSON.stringify(state.applications[0]);');
+  const id = run("originalId");
+  handlers.click({target:{closest:selector=>selector==="[data-edit-application]" ? {dataset:{editApplication:id}} : null}});
+  assert.equal(run("state.modal"),"edit-application");
+  const before=run("JSON.stringify(state.jobs)");
+  const html=run("renderModal()");
+  for (const field of ["company","role","location","applyUrl","deadline","notes"]) assert.match(html,new RegExp(`name="${field}"`));
+  assert.equal(run("JSON.stringify(state.jobs)"),before,"opening editor must not save changes");
+  const values={applicationId:id,company:' 测试公司 <A> ',role:' AI 产品经理 "校招" ',location:" 北京 / 上海 ",applyUrl:"https://example.com/jobs/42",deadline:"招满即止",notes:"内推岗位"};
+  await handlers.submit({preventDefault(){},target:{id:"application-edit-form",values}});
+  assert.equal(run("state.modal"),null);
+  assert.equal(run("state.applications.length"),1);
+  assert.equal(run("state.jobs.length"),1);
+  assert.equal(run("state.jobs[0].id"),run("originalJobId"));
+  assert.equal(run("state.jobs[0].role"),'AI 产品经理 "校招"');
+  assert.equal(run("state.jobs[0].location"),"北京 / 上海");
+  assert.equal(run("state.applications[0].notes"),"内推岗位");
+  for (const key of ["id","jobId","status","createdAt","appliedAt","progressUrl","followUpAt","interviewRecordId"]) {
+    assert.equal(run(`state.applications[0].${key}`),run(`JSON.parse(originalApplication).${key}`));
+  }
+  assert.equal(run("state.interviewRecords[0].role"),'AI 产品经理 "校招"');
+  assert.equal(run("state.interviewRecords[0].answerNotes"),"保留复盘");
+  assert.equal(run("JSON.stringify(radarJobs)"),run("originalRadar"));
+  await run("workspaceSync.flush()");
+  assert.equal(writes.at(-1)[1].jobs[0].location,"北京 / 上海");
+  run('state = restoreState(JSON.parse(JSON.stringify(state))); state.modal="edit-application"; state.editingApplicationId=originalId;');
+  assert.match(run("renderModal()"),/测试公司 &lt;A&gt;/);
+  assert.match(run("renderModal()"),/AI 产品经理 &quot;校招&quot;/);
+  assert.match(run("renderPipeline()"),/data-edit-application=/);
+});
+
+test("application detail edits reject invalid input without partial changes and respect privacy", async t=>{
+  const {run}=app(t);
+  assert.throws(()=>run('updateApplicationDetails("missing",{})'),/登录/);
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"job",company:"原公司",role:"原岗位"}]; state.applications=[{id:"app",jobId:"job"}]; var snapshot=JSON.stringify(state);');
+  assert.throws(()=>run('updateApplicationDetails("app",{company:" ",role:"岗位"})'),/不能为空/);
+  assert.throws(()=>run('updateApplicationDetails("app",{company:"公司",role:"岗位",applyUrl:"javascript:alert(1)"})'),/网址/);
+  assert.throws(()=>run('updateApplicationDetails("missing",{company:"公司",role:"岗位"})'),/不存在/);
+  assert.equal(run("JSON.stringify(state)"),run("snapshot"));
+  await run("applyCloudUser(null)");
+  run('state.modal="edit-application"; state.editingApplicationId="app";');
+  assert.doesNotMatch(run("renderModal()"),/id="application-edit-form"/);
+});
+
+test("manual and archived applications keep their identity and allow clearing optional details",async t=>{
+  const {run}=app(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"manual",company:"公司",role:"岗位",location:"北京",applyUrl:"https://example.com",deadline:"待确认",jd:"已有JD"}]; state.applications=[{id:"app",jobId:"manual",archivedAt:"2026-09-01",feishuRecordId:"feishu",notes:"旧备注"}]; updateApplicationDetails("app",{company:"新公司",role:"新岗位"});');
+  assert.equal(run("state.jobs[0].location"),"");
+  assert.equal(run("state.jobs[0].applyUrl"),"");
+  assert.equal(run("state.jobs[0].jd"),"已有JD");
+  assert.equal(run("state.applications[0].archivedAt"),"2026-09-01");
+  assert.equal(run("state.applications[0].syncStatus"),"pending_push");
+});
+
 test("guest email form explains registration and requires privacy consent", t=>{
   const {run}=app(t);
   run('state.modal = "account"');

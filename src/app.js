@@ -88,6 +88,7 @@ const initialState = {
   selectedDiagnosisCompany: "",
   woodenFishCount: 0,
   selectedJob: "",
+  editingApplicationId: "",
   jobs: [],
   pipelineFilters: { query: "", company: "全部公司", status: "全部进度", processResult: "全部环节状态", scope: "active" },
   applications: [],
@@ -2486,7 +2487,7 @@ function renderPipeline() {
           const radarCompanyMatch = radarJobs.find(item => companyKeysMatch(item.company, job.company));
           return `<tr data-application-row="${app.id}">
             <td><div class="table-company"><strong>${escapeHtml(job.company)}</strong><span class="sync-mini ${app.syncStatus || "local_only"}">${app.syncStatus === "imported" ? "飞书已导入" : app.feishuRecordId ? "飞书已关联" : "工作台本地"}</span></div></td>
-            <td><strong class="table-role">${escapeHtml(job.role)}</strong><span class="table-sub">${escapeHtml(job.location || "地点待确认")}</span></td>
+            <td><strong class="table-role">${escapeHtml(job.role)}</strong><span class="table-sub">${escapeHtml(job.location || "地点待确认")}</span><button class="table-link-button" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息">编辑</button></td>
             <td><select class="table-select stage-${app.status}" data-app-status="${app.id}" aria-label="${escapeHtml(job.company)}当前进度">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}" ${app.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td>
             <td>${renderProcessStateCell(app, interview, job)}</td>
             <td><input class="table-input date" type="date" value="${escapeHtml(app.appliedAt || "")}" data-app-field="appliedAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}投递日期"></td>
@@ -2501,6 +2502,23 @@ function renderPipeline() {
       </table>
     </div>
   `);
+}
+
+function updateApplicationDetails(applicationId, data) {
+  if (!hasPrivateAccess()) throw new Error("请先登录后再修改投递记录。");
+  const application = state.applications.find(item => item.id === applicationId);
+  const job = application && state.jobs.find(item => item.id === application.jobId);
+  if (!job) throw new Error("这条投递记录已不存在，请关闭后重新查看。");
+  const fields = Object.fromEntries(["company", "role", "location", "applyUrl", "deadline", "notes"].map(key => [key, String(data[key] || "").trim()]));
+  if (!fields.company || !fields.role) throw new Error("公司和具体岗位名称不能为空。");
+  if (fields.applyUrl && !safeExternalUrl(fields.applyUrl)) throw new Error("岗位链接请填写完整的 http:// 或 https:// 网址。");
+  Object.assign(job, { company: fields.company, role: fields.role, location: fields.location, applyUrl: fields.applyUrl, deadline: fields.deadline });
+  application.notes = fields.notes;
+  application.updatedAt = new Date().toISOString();
+  application.syncStatus = application.feishuRecordId ? "pending_push" : "local_only";
+  state.interviewRecords
+    .filter(record => record.applicationId === application.id || record.id === application.interviewRecordId)
+    .forEach(record => { record.company = job.company; record.role = job.role; });
 }
 
 function renderProcessStateCell(app, record, job) {
@@ -2849,6 +2867,27 @@ function renderModal() {
           <div class="field full"><label for="radar-jd-content">完整职位描述</label><textarea id="radar-jd-content" name="jd" rows="12" required placeholder="从企业招聘页面复制岗位职责、任职要求和加分项">${escapeHtml(existing?.jd || "")}</textarea><span class="field-help">只有具体岗位的职位描述会用于分析；招聘批次和岗位方向不会被当成完整 JD。</span></div>
         </div>
         <div class="form-actions"><button class="btn" type="button" data-action="close-modal">取消</button><button class="btn primary" type="submit">保存并分析</button></div>
+      </form>
+    `);
+  }
+  if (state.modal === "edit-application") {
+    const application = state.applications.find(item => item.id === state.editingApplicationId);
+    const job = application && state.jobs.find(item => item.id === application.jobId);
+    if (!job) return modalShell("编辑投递信息", `<p>这条投递记录已不存在，请关闭后重新查看。</p>`);
+    return modalShell("编辑投递信息", `
+      <form id="application-edit-form">
+        <input type="hidden" name="applicationId" value="${escapeHtml(application.id)}">
+        <p class="field-help">补充实际投递的岗位信息。只修改你的私人记录，不影响公共岗位雷达；投递进度和笔面复盘会保留。</p>
+        <div class="form-grid">
+          <div class="field"><label for="edit-company">公司</label><input id="edit-company" name="company" value="${escapeHtml(job.company)}" required></div>
+          <div class="field"><label for="edit-role">具体岗位名称</label><input id="edit-role" name="role" value="${escapeHtml(job.role)}" required placeholder="例如：AI 产品经理（校招）"></div>
+          <div class="field"><label for="edit-location">工作地点</label><input id="edit-location" name="location" value="${escapeHtml(job.location || "")}" placeholder="例如：北京 / 上海"></div>
+          <div class="field"><label for="edit-deadline">岗位截止时间</label><input id="edit-deadline" name="deadline" value="${escapeHtml(job.deadline || "")}" placeholder="例如：2026-10-31，或招满即止"></div>
+          <div class="field full"><label for="edit-job-url">岗位详情链接</label><input id="edit-job-url" name="applyUrl" type="url" value="${escapeHtml(job.applyUrl || "")}" placeholder="https://"><span class="field-help">投递状态查询网址仍可在列表的「查看状态」栏单独修改。</span></div>
+          <div class="field full"><label for="edit-application-notes">投递备注</label><textarea id="edit-application-notes" name="notes" rows="4" placeholder="例如：部门、岗位编号、内推情况等">${escapeHtml(application.notes || "")}</textarea></div>
+        </div>
+        <p class="privacy-error" role="alert"></p>
+        <div class="form-actions"><button class="btn" type="button" data-action="close-modal">取消</button><button class="btn primary" type="submit">保存修改</button></div>
       </form>
     `);
   }
@@ -3425,6 +3464,16 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const editApplication = event.target.closest("[data-edit-application]");
+  if (editApplication) {
+    if (!requirePrivateAccess()) return;
+    state.editingApplicationId = editApplication.dataset.editApplication;
+    state.modal = "edit-application";
+    render();
+    setTimeout(() => document.querySelector("#edit-role")?.focus(), 30);
+    return;
+  }
+
   const modalButton = event.target.closest("[data-modal]");
   if (modalButton) {
     state.modal = modalButton.dataset.modal;
@@ -3940,6 +3989,20 @@ document.addEventListener("input", (event) => {
 document.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (event.target.id !== "cloud-login-form" && !requirePrivateAccess()) return;
+  if (event.target.id === "application-edit-form") {
+    const data = Object.fromEntries(new FormData(event.target));
+    try {
+      updateApplicationDetails(data.applicationId, data);
+    } catch (error) {
+      event.target.querySelector(".privacy-error").textContent = error.message;
+      return;
+    }
+    state.modal = null;
+    state.editingApplicationId = "";
+    saveState("投递信息已更新");
+    render();
+    return;
+  }
   if (event.target.id === "import-data-form") {
     const button = event.target.querySelector("button[type='submit']");
     const error = event.target.querySelector(".privacy-error");
