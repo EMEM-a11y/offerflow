@@ -173,8 +173,9 @@ const APPLICATION_STAGES = [
   ...FUNNEL_STAGES.map(([value, label]) => [`withdrawn_at_${value}`, `${label} · 主动放弃`]),
   ...LEGACY_END_STAGES
 ];
-const INTERVIEW_STAGES = ["ai_interview", "interview_1", "interview_2", "interview_3", "interview_more"];
-const PROCESS_STAGES = ["assessment", "written", ...INTERVIEW_STAGES];
+const ASSESSMENT_STAGES = ["assessment", "ai_interview", "written"];
+const INTERVIEW_STAGES = ["interview_1", "interview_2", "interview_3", "interview_more"];
+const PROCESS_STAGES = [...ASSESSMENT_STAGES, ...INTERVIEW_STAGES];
 const INTERVIEW_STAGE_FILTERS = [
   ["all", "全部环节"],
   ["assessment", "测评"],
@@ -195,7 +196,7 @@ const PIPELINE_GROUPS = [
 
 function renderApplicationStageOptions(selected) {
   const groups = [
-    ["投递与筛选", ["applied"]], ["测评与笔试", ["assessment", "written"]],
+    ["投递与筛选", ["applied"]], ["测评与笔试", ASSESSMENT_STAGES],
     ["面试轮次", INTERVIEW_STAGES], ["录用", ["salary", "offer_intent", "offer"]],
     ["未通过（选择结束环节）", REJECTION_STAGES.filter(value => value.startsWith("rejected_at_"))],
     ["主动放弃（选择结束环节）", WITHDRAWN_STAGES.filter(value => value.startsWith("withdrawn_at_"))],
@@ -738,7 +739,7 @@ function requirePrivateAccess() {
 function appCount(status) {
   const groups = {
     applied: ["applied"],
-    assessment: ["assessment", "written"],
+    assessment: ASSESSMENT_STAGES,
     interview: INTERVIEW_STAGES,
     offer: ["offer_intent", "offer"]
   };
@@ -752,7 +753,7 @@ function applicationStageLabel(status) {
 
 function applicationMatchesPipelineStatus(status, filterStatus) {
   if (filterStatus === "全部进度") return true;
-  if (filterStatus === "assessment_group") return ["assessment", "written"].includes(status);
+  if (filterStatus === "assessment_group") return ASSESSMENT_STAGES.includes(status);
   if (filterStatus === "interview_group") return INTERVIEW_STAGES.includes(status);
   if (filterStatus === "rejected_group") return REJECTION_STAGES.includes(status);
   if (filterStatus === "withdrawn") return WITHDRAWN_STAGES.includes(status);
@@ -2426,7 +2427,7 @@ function renderInterviewRecords() {
             <span class="record-date">${escapeHtml(formatInterviewDate(item.date))}</span>
             <span class="record-title"><strong>${escapeHtml(item.company)}</strong><em>${escapeHtml(interviewStatusLabel(item))}</em></span>
             <span class="record-meta">${escapeHtml(item.role)} · ${escapeHtml(item.round)}</span>
-            <span class="record-flags">${INTERVIEW_STAGES.includes(stageForProcessRecord(item.round)) ? `${item.recording ? "有录音" : "无录音"} · ${item.questions.length} 道问题` : `${item.questions.length} 条复盘记录`}</span>
+            <span class="record-flags">${["ai_interview", ...INTERVIEW_STAGES].includes(stageForProcessRecord(item.round)) ? `${item.recording ? "有录音" : "无录音"} · ${item.questions.length} 道问题` : `${item.questions.length} 条复盘记录`}</span>
           </button>
         `).join("")}
       </section>
@@ -2451,7 +2452,7 @@ function renderInterviewRecords() {
 }
 
 function renderInterviewRecording(record) {
-  if (!INTERVIEW_STAGES.includes(stageForProcessRecord(record.round)) && !record.recording) return "";
+  if (!["ai_interview", ...INTERVIEW_STAGES].includes(stageForProcessRecord(record.round)) && !record.recording) return "";
   if (!record.recording) {
     return `<div class="recording-box empty"><div><strong>添加面试录音</strong><p>录音仅存当前浏览器，请保留原文件。</p></div><label class="btn" for="audio-${record.id}">选择录音</label><input id="audio-${record.id}" type="file" accept="audio/*,.m4a,.mp3,.wav,.aac,.mp4" data-audio-upload="${record.id}" hidden></div>`;
   }

@@ -357,7 +357,14 @@ test("detailed stages retain every terminal phase across restore and existing di
     assert.equal(run(`normalizeApplicationStatus("${status}")`),status);
   }
   assert.equal(run('isClosedApplicationStatus("offer_intent")'),false);
-  assert.equal(run('applicationMatchesPipelineStatus("ai_interview","interview_group")'),true);
+  assert.equal(run('applicationMatchesPipelineStatus("ai_interview","interview_group")'),false);
+  assert.equal(run('applicationMatchesPipelineStatus("ai_interview","assessment_group")'),true);
+  const options = run('renderApplicationStageOptions("ai_interview")');
+  assert.match(options.match(/<optgroup label="测评与笔试">([\s\S]*?)<\/optgroup>/)[1], /value="ai_interview" selected/);
+  assert.doesNotMatch(options.match(/<optgroup label="面试轮次">([\s\S]*?)<\/optgroup>/)[1], /ai_interview/);
+  run('state.applications=[{id:"ai",status:"ai_interview"}];');
+  assert.equal(run('appCount("assessment")'),1);
+  assert.equal(run('appCount("interview")'),0);
   assert.equal(run('applicationMatchesPipelineStatus("offer_intent","offer")'),true);
   run('state.jobs=[{id:"j",company:"示例",role:"产品"}]; state.applications=APPLICATION_STAGES.map(([status],i)=>({id:String(i),jobId:"j",status}));');
   assert.equal(run('pipelineProgressCounts().reduce((sum,item)=>sum+item.count,0)'),run('state.applications.length'));
