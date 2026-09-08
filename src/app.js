@@ -147,36 +147,46 @@ const DAILY_ENCOURAGEMENT_FALLBACKS = [
 ];
 const ENCOURAGEMENT_EXCLUDE = /相思|爱情|恋人|情人|红颜|爱意|爱着|吻|妾|君兮|想你|爱你|喜欢你|心动|拥抱/;
 
-const APPLICATION_STAGES = [
+const FUNNEL_STAGES = [
   ["applied", "简历筛选"],
   ["assessment", "测评"],
+  ["ai_interview", "AI 面试"],
   ["written", "笔试"],
   ["interview_1", "一面"],
   ["interview_2", "二面"],
   ["interview_3", "三面"],
   ["interview_more", "加面 / 终面"],
-  ["salary", "谈薪"],
-  ["offer", "Offer（录用意向）"],
+  ["salary", "HR 谈薪"],
+  ["offer_intent", "岗位意向书"],
+  ["offer", "Offer"]
+];
+const LEGACY_END_STAGES = [
   ["rejected_resume", "简历未通过"],
   ["rejected_assessment", "测评 / 笔试未通过"],
   ["rejected_interview", "面试未通过"],
   ["rejected_final", "终面 / 最终未通过"],
   ["withdrawn", "已放弃"]
 ];
-
-const FUNNEL_STAGES = APPLICATION_STAGES.slice(0, 9);
-const INTERVIEW_STAGES = ["interview_1", "interview_2", "interview_3", "interview_more"];
+const APPLICATION_STAGES = [
+  ...FUNNEL_STAGES,
+  ...FUNNEL_STAGES.map(([value, label]) => [`rejected_at_${value}`, `${label} · 未通过`]),
+  ...FUNNEL_STAGES.map(([value, label]) => [`withdrawn_at_${value}`, `${label} · 主动放弃`]),
+  ...LEGACY_END_STAGES
+];
+const INTERVIEW_STAGES = ["ai_interview", "interview_1", "interview_2", "interview_3", "interview_more"];
 const PROCESS_STAGES = ["assessment", "written", ...INTERVIEW_STAGES];
 const INTERVIEW_STAGE_FILTERS = [
   ["all", "全部环节"],
   ["assessment", "测评"],
   ["written", "笔试"],
+  ["ai_interview", "AI 面试"],
   ["interview_1", "一面"],
   ["interview_2", "二面"],
   ["interview_3", "三面"],
   ["interview_more", "加面 / 终面"]
 ];
-const REJECTION_STAGES = ["rejected_resume", "rejected_assessment", "rejected_interview", "rejected_final"];
+const REJECTION_STAGES = APPLICATION_STAGES.filter(([value]) => value.startsWith("rejected_")).map(([value]) => value);
+const WITHDRAWN_STAGES = APPLICATION_STAGES.filter(([value]) => value.startsWith("withdrawn")).map(([value]) => value);
 const PIPELINE_GROUPS = [
   ["applied", "简历筛选"], ["assessment_group", "测评 / 笔试"],
   ["interview_group", "面试"], ["salary", "谈薪"],
@@ -186,8 +196,10 @@ const PIPELINE_GROUPS = [
 function renderApplicationStageOptions(selected) {
   const groups = [
     ["投递与筛选", ["applied"]], ["测评与笔试", ["assessment", "written"]],
-    ["面试轮次", INTERVIEW_STAGES], ["录用", ["salary", "offer"]],
-    ["流程已结束", [...REJECTION_STAGES, "withdrawn"]]
+    ["面试轮次", INTERVIEW_STAGES], ["录用", ["salary", "offer_intent", "offer"]],
+    ["未通过（选择结束环节）", REJECTION_STAGES.filter(value => value.startsWith("rejected_at_"))],
+    ["主动放弃（选择结束环节）", WITHDRAWN_STAGES.filter(value => value.startsWith("withdrawn_at_"))],
+    ["历史结束状态（未细分）", LEGACY_END_STAGES.map(([value]) => value)]
   ];
   return groups.map(([label, values]) => `<optgroup label="${label}">${APPLICATION_STAGES.filter(([value]) => values.includes(value)).map(([value, name]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${name}</option>`).join("")}</optgroup>`).join("");
 }
@@ -196,6 +208,7 @@ const PROCESS_RESULT_OPTIONS = [
   ["waiting", "已完成，待结果"],
   ["passed", "已通过"],
   ["rejected", "未通过"],
+  ["withdrawn", "主动放弃"],
   ["offer", "已获 Offer"]
 ];
 
@@ -304,7 +317,7 @@ function normalizeApplicationStatus(status) {
 }
 
 function isClosedApplicationStatus(status) {
-  return status === "offer" || status === "withdrawn" || REJECTION_STAGES.includes(status);
+  return status === "offer" || WITHDRAWN_STAGES.includes(status) || REJECTION_STAGES.includes(status);
 }
 
 function saveState(message) {
@@ -727,7 +740,7 @@ function appCount(status) {
     applied: ["applied"],
     assessment: ["assessment", "written"],
     interview: INTERVIEW_STAGES,
-    offer: ["offer"]
+    offer: ["offer_intent", "offer"]
   };
   const accepted = groups[status] || [status];
   return state.applications.filter((item) => !item.archivedAt && accepted.includes(normalizeApplicationStatus(item.status))).length;
@@ -742,6 +755,8 @@ function applicationMatchesPipelineStatus(status, filterStatus) {
   if (filterStatus === "assessment_group") return ["assessment", "written"].includes(status);
   if (filterStatus === "interview_group") return INTERVIEW_STAGES.includes(status);
   if (filterStatus === "rejected_group") return REJECTION_STAGES.includes(status);
+  if (filterStatus === "withdrawn") return WITHDRAWN_STAGES.includes(status);
+  if (filterStatus === "offer") return ["offer_intent", "offer"].includes(status);
   return status === filterStatus;
 }
 
@@ -2599,7 +2614,7 @@ function updateApplicationDetails(applicationId, data) {
 
 function renderProcessStateCell(app, record, job) {
   if (!PROCESS_STAGES.includes(app.status)) {
-    const label = app.status === "applied" ? "等待筛选" : app.status === "offer" ? "已获 Offer" : isClosedApplicationStatus(app.status) ? "流程已结束" : "推进中";
+    const label = app.status === "applied" ? "等待筛选" : app.status === "offer" ? "已获 Offer" : REJECTION_STAGES.includes(app.status) ? "未通过" : WITHDRAWN_STAGES.includes(app.status) ? "主动放弃" : "推进中";
     return `<span class="process-state-static">${escapeHtml(label)}</span>`;
   }
   const result = record && stageForProcessRecord(record.round) === app.status ? record.result || "pending" : "pending";
@@ -2637,6 +2652,7 @@ function filterPipelineRowsInPlace() {
 function processRoundForStage(status) {
   return {
     assessment: "测评",
+    ai_interview: "AI 面试",
     written: "笔试",
     interview_1: "一面",
     interview_2: "二面",
@@ -2649,6 +2665,7 @@ function stageForProcessRecord(round) {
   const value = String(round || "");
   if (/测评|在线测试|性格测试/.test(value)) return "assessment";
   if (/笔试/.test(value)) return "written";
+  if (/AI\s*面试|人工智能面试/i.test(value)) return "ai_interview";
   if (/四|五|六|七|八|九|十|加面|终面/.test(value)) return "interview_more";
   if (/三面/.test(value)) return "interview_3";
   if (/二面/.test(value)) return "interview_2";
@@ -2656,15 +2673,19 @@ function stageForProcessRecord(round) {
 }
 
 function applicationNextAction(status) {
+  if (status.startsWith("rejected_at_")) return `记录${applicationStageLabel(status.slice("rejected_at_".length))}未通过的反馈与复盘`;
+  if (status.startsWith("withdrawn_at_")) return `记录在${applicationStageLabel(status.slice("withdrawn_at_".length))}阶段主动放弃的原因`;
   return {
     applied: "查看招聘系统进展或等待筛选结果",
     assessment: "确认测评截止时间并完成在线测评",
+    ai_interview: "确认 AI 面试截止时间，检查设备并完成面试",
     written: "确认笔试时间、题型和提交方式",
     interview_1: "确认一面时间，准备自我介绍和项目介绍",
     interview_2: "复盘一面，准备二面业务追问",
     interview_3: "复盘二面，准备三面核心判断题",
     interview_more: "确认加面或终面安排，准备关键决策问题",
     salary: "整理期望薪资、可接受范围和到岗时间",
+    offer_intent: "核对岗位意向书，跟进正式 Offer 发放时间",
     offer: "核对 Offer 条款并确认回复时间",
     rejected_resume: "记录简历未通过，检查岗位匹配与表达",
     rejected_assessment: "复盘测评或笔试失分点",
@@ -2721,6 +2742,14 @@ function ensureProcessRecord(app) {
 
 function synchronizeApplicationProcessState(app) {
   const linkedRecords = (state.interviewRecords || []).filter(record => record.applicationId === app.id || record.id === app.interviewRecordId);
+  const ended = /^(rejected|withdrawn)_at_(.+)$/.exec(app.status);
+  if (ended) {
+    linkedRecords.filter(record => stageForProcessRecord(record.round) === ended[2]).forEach(record => {
+      record.result = ended[1];
+      record.status = "completed";
+      record.nextActions = processNextAction(record);
+    });
+  }
   if (!PROCESS_STAGES.includes(app.status)) {
     linkedRecords
       .filter(record => record.status === "scheduled" && record.result === "pending")
@@ -2745,10 +2774,7 @@ function synchronizeApplicationProcessState(app) {
 }
 
 function rejectionStatusForRecord(record) {
-  const stage = stageForProcessRecord(record.round);
-  if (["assessment", "written"].includes(stage)) return "rejected_assessment";
-  if (stage === "interview_more") return "rejected_final";
-  return "rejected_interview";
+  return `rejected_at_${stageForProcessRecord(record.round)}`;
 }
 
 function processResultLabel(record) {
@@ -2760,6 +2786,7 @@ function processNextAction(record) {
   if (record.result === "waiting") return `${record.round || "本轮"}已完成，等待结果`;
   if (record.result === "passed") return `${record.round || "本轮"}已通过，等待下一轮安排`;
   if (record.result === "rejected") return `复盘${record.round || "本轮"}未通过原因`;
+  if (record.result === "withdrawn") return `记录在${record.round || "本轮"}主动放弃的原因`;
   if (record.result === "offer") return "核对 Offer 条款并确认回复时间";
   return "";
 }
@@ -2777,6 +2804,7 @@ function syncApplicationFromRecord(record) {
   const recordStage = stageForProcessRecord(record.round);
   if (record.result === "offer") app.status = "offer";
   else if (record.result === "rejected") app.status = rejectionStatusForRecord(record);
+  else if (record.result === "withdrawn") app.status = `withdrawn_at_${recordStage}`;
   else {
     const currentIndex = FUNNEL_STAGES.findIndex(([status]) => status === app.status);
     const recordIndex = FUNNEL_STAGES.findIndex(([status]) => status === recordStage);
@@ -3011,7 +3039,7 @@ function renderModal() {
           <div class="field"><label for="new-cohort">届别</label><input id="new-cohort" name="cohort" value="2027届"></div>
           <div class="field"><label for="new-batch">批次</label><select id="new-batch" name="batch"><option>正式批</option><option>提前批</option><option>实习</option><option>补录</option><option>春招</option></select></div>
           <div class="field"><label for="new-deadline">截止时间</label><input id="new-deadline" name="deadline" type="date"></div>
-          <div class="field"><label for="new-status">当前进度</label><select id="new-status" name="status">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
+          <div class="field"><label for="new-status">当前进度</label><select id="new-status" name="status">${renderApplicationStageOptions("applied")}</select></div>
           <div class="field"><label for="new-reminder">提醒日期</label><input id="new-reminder" name="reminderAt" type="date"><span class="field-help">提前 14 天显示在「求职概览」。</span></div>
           <div class="field full"><label for="new-url">招聘系统或进展网址</label><input id="new-url" name="applyUrl" type="url" placeholder="https://"><span class="field-help">填写可以查看投递状态的招聘系统页面。</span></div>
         </div>

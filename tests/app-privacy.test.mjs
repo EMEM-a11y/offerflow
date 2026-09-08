@@ -327,7 +327,54 @@ test("application stage generates one written-test record and result stays linke
   run("synchronizeProcessRecordsFromApplications()");
   assert.equal(run("state.interviewRecords.length"),1);
   run('updateProcessResult(state.interviewRecords[0], "rejected")');
-  assert.equal(run("state.applications[0].status"),"rejected_assessment");
+  assert.equal(run("state.applications[0].status"),"rejected_at_written");
+});
+
+test("detailed stages retain every terminal phase across restore and existing distribution groups", async t => {
+  const {run}=app(t);
+  await run('applyCloudUser({id:"A"})');
+  const stages=run("FUNNEL_STAGES.map(([value])=>value)");
+  assert.ok(stages.includes("ai_interview"));
+  assert.ok(stages.includes("offer_intent"));
+  assert.match(run('renderApplicationStageOptions("salary")'), /HR 谈薪/);
+  for (const stage of stages) {
+    for (const result of ["rejected", "withdrawn"]) {
+      const status=`${result}_at_${stage}`;
+      assert.equal(run(`normalizeApplicationStatus("${status}")`),status);
+      assert.equal(run(`restoreState({applications:[{id:"a",status:"${status}"}]}).applications[0].status`),status);
+      assert.equal(run(`isClosedApplicationStatus("${status}")`),true);
+      assert.equal(run(`applicationMatchesPipelineStatus("${status}","${result === "rejected" ? "rejected_group" : "withdrawn"}")`),true);
+      assert.match(run(`renderApplicationStageOptions("${status}")`), new RegExp(`value="${status}" selected`));
+      assert.ok(run(`applicationNextAction("${status}")`).length > 0);
+    }
+  }
+  for (const status of ["rejected_resume","rejected_assessment","rejected_interview","rejected_final","withdrawn","offer"]) {
+    assert.equal(run(`normalizeApplicationStatus("${status}")`),status);
+  }
+  assert.equal(run('isClosedApplicationStatus("offer_intent")'),false);
+  assert.equal(run('applicationMatchesPipelineStatus("ai_interview","interview_group")'),true);
+  assert.equal(run('applicationMatchesPipelineStatus("offer_intent","offer")'),true);
+  run('state.jobs=[{id:"j",company:"示例",role:"产品"}]; state.applications=APPLICATION_STAGES.map(([status],i)=>({id:String(i),jobId:"j",status}));');
+  assert.equal(run('pipelineProgressCounts().reduce((sum,item)=>sum+item.count,0)'),run('state.applications.length'));
+  assert.equal(run('PIPELINE_GROUPS.length'),7);
+});
+
+test("each process round retains its precise rejected or withdrawn stage in both directions", t => {
+  const {run}=app(t);
+  for (const stage of run("PROCESS_STAGES")) {
+    for (const result of ["rejected","withdrawn"]) {
+      run(`state=restoreState({jobs:[{id:"j",company:"示例",role:"产品"}],applications:[{id:"a",jobId:"j",status:"${stage}"}]}); synchronizeProcessRecordsFromApplications();`);
+      assert.equal(run('stageForProcessRecord(state.interviewRecords[0].round)'),stage);
+      run(`updateProcessResult(state.interviewRecords[0],"${result}")`);
+      assert.equal(run('state.applications[0].status'),`${result}_at_${stage}`);
+      run(`state.applications[0].status="${stage}"; synchronizeApplicationProcessState(state.applications[0]); updateProcessResult(state.interviewRecords[0],"waiting");`);
+      assert.equal(run('state.applications[0].status'),stage);
+      run(`state.applications[0].status="${result}_at_${stage}"; synchronizeApplicationProcessState(state.applications[0]);`);
+      assert.equal(run('state.interviewRecords[0].result'),result);
+      assert.equal(run('state.interviewRecords[0].status'),"completed");
+    }
+  }
+  assert.equal(run('stageForProcessRecord("AI笔试")'),"written");
 });
 
 test("structured backup import validates format and never pretends to restore attachments",t=>{
