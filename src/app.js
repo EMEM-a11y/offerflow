@@ -148,7 +148,7 @@ const DAILY_ENCOURAGEMENT_FALLBACKS = [
 const ENCOURAGEMENT_EXCLUDE = /相思|爱情|恋人|情人|红颜|爱意|爱着|吻|妾|君兮|想你|爱你|喜欢你|心动|拥抱/;
 
 const APPLICATION_STAGES = [
-  ["applied", "已投递 / 简历筛选"],
+  ["applied", "简历筛选"],
   ["assessment", "测评"],
   ["written", "笔试"],
   ["interview_1", "一面"],
@@ -177,6 +177,20 @@ const INTERVIEW_STAGE_FILTERS = [
   ["interview_more", "加面 / 终面"]
 ];
 const REJECTION_STAGES = ["rejected_resume", "rejected_assessment", "rejected_interview", "rejected_final"];
+const PIPELINE_GROUPS = [
+  ["applied", "简历筛选"], ["assessment_group", "测评 / 笔试"],
+  ["interview_group", "面试"], ["salary", "谈薪"],
+  ["offer", "Offer"], ["rejected_group", "未通过"], ["withdrawn", "已放弃"]
+];
+
+function renderApplicationStageOptions(selected) {
+  const groups = [
+    ["投递与筛选", ["applied"]], ["测评与笔试", ["assessment", "written"]],
+    ["面试轮次", INTERVIEW_STAGES], ["录用", ["salary", "offer"]],
+    ["流程已结束", [...REJECTION_STAGES, "withdrawn"]]
+  ];
+  return groups.map(([label, values]) => `<optgroup label="${label}">${APPLICATION_STAGES.filter(([value]) => values.includes(value)).map(([value, name]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${name}</option>`).join("")}</optgroup>`).join("");
+}
 const PROCESS_RESULT_OPTIONS = [
   ["pending", "待进行"],
   ["waiting", "已完成，待结果"],
@@ -249,7 +263,7 @@ function restoreState(saved) {
     pipelineFilters: {
       ...initialState.pipelineFilters,
       ...saved.pipelineFilters,
-      status: !savedPipelineStatus || savedPipelineStatus === "全部进度" ? "全部进度" : normalizeApplicationStatus(savedPipelineStatus)
+      status: !savedPipelineStatus || savedPipelineStatus === "全部进度" ? "全部进度" : PIPELINE_GROUPS.some(([value]) => value === savedPipelineStatus) ? savedPipelineStatus : normalizeApplicationStatus(savedPipelineStatus)
     },
     applications: (saved.applications || initialState.applications).map(item => ({
       feishuRecordId: "",
@@ -727,6 +741,7 @@ function applicationMatchesPipelineStatus(status, filterStatus) {
   if (filterStatus === "全部进度") return true;
   if (filterStatus === "assessment_group") return ["assessment", "written"].includes(status);
   if (filterStatus === "interview_group") return INTERVIEW_STAGES.includes(status);
+  if (filterStatus === "rejected_group") return REJECTION_STAGES.includes(status);
   return status === filterStatus;
 }
 
@@ -2481,6 +2496,18 @@ function renderInterviewPrep() {
   `;
 }
 
+function pipelineProgressCounts() {
+  const scope = state.pipelineFilters.scope;
+  const applications = state.applications.filter(app => state.jobs.some(job => job.id === app.jobId)
+    && (scope === "all" || (scope === "archived" ? Boolean(app.archivedAt) : !app.archivedAt)));
+  return PIPELINE_GROUPS.map(([value, label]) => ({ value, label, count: applications.filter(app => applicationMatchesPipelineStatus(app.status, value)).length }));
+}
+
+function renderPipelineProgress() {
+  const counts = pipelineProgressCounts();
+  return `<nav class="pipeline-progress" aria-label="当前进度概览"><span class="pipeline-progress-label">当前分布</span>${counts.map(({value, label, count}) => `<button data-pipeline-progress="${value}" aria-pressed="${state.pipelineFilters.status === value}"><span>${label}</span><strong>${count}</strong></button>`).join("")}<button data-pipeline-progress="全部进度" aria-pressed="${state.pipelineFilters.status === "全部进度"}">全部 <strong>${counts.reduce((total, item) => total + item.count, 0)}</strong></button></nav>`;
+}
+
 function renderPipeline() {
   if (!hasPrivateAccess()) return renderPrivacyGate("pipeline", "OfferFlow 投递记录");
   const filters = state.pipelineFilters || initialState.pipelineFilters;
@@ -2504,7 +2531,7 @@ function renderPipeline() {
   const archivedCount = state.applications.filter(app => app.archivedAt).length;
   return viewWrap("pipeline", `
     <div class="page-heading pipeline-heading">
-      <div><h1>投递记录</h1><p>点击公司或岗位名称编辑详情，阶段与日期可直接修改。</p></div>
+      <div><h1>投递记录</h1><p>阶段表示当前环节；完成后可在环节状态中标记“已完成，待结果”。</p></div>
       <div class="heading-actions"><button class="btn" data-action="export-applications">导出投递表</button><button class="btn primary" data-modal="quick-add">记录投递</button></div>
     </div>
     <div class="pipeline-controls">
@@ -2519,17 +2546,18 @@ function renderPipeline() {
         <summary>筛选${activeFilterCount ? `<em>${activeFilterCount}</em>` : ""}</summary>
         <div class="pipeline-filter-popover">
           <label><span>公司</span><select id="pipeline-company-filter" aria-label="按公司筛选"><option value="全部公司">全部公司</option>${companyOptions.map(company => `<option value="${escapeHtml(company)}" ${filters.company === company ? "selected" : ""}>${escapeHtml(company)}</option>`).join("")}</select></label>
-          <label><span>当前阶段</span><select id="pipeline-status-filter" aria-label="筛选求职进度"><option value="全部进度">全部进度</option><option value="assessment_group" ${filters.status === "assessment_group" ? "selected" : ""}>测评 / 笔试</option><option value="interview_group" ${filters.status === "interview_group" ? "selected" : ""}>面试阶段</option>${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}" ${filters.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
+          <label><span>当前阶段</span><select id="pipeline-status-filter" aria-label="筛选求职进度"><option value="全部进度">全部进度</option><option value="assessment_group" ${filters.status === "assessment_group" ? "selected" : ""}>测评 / 笔试</option><option value="interview_group" ${filters.status === "interview_group" ? "selected" : ""}>面试阶段</option><option value="rejected_group" ${filters.status === "rejected_group" ? "selected" : ""}>所有未通过</option>${renderApplicationStageOptions(filters.status)}</select></label>
           <label><span>环节状态</span><select id="pipeline-process-filter" aria-label="按环节状态筛选"><option value="全部环节状态">全部环节状态</option>${PROCESS_RESULT_OPTIONS.map(([value, label]) => `<option value="${value}" ${filters.processResult === value ? "selected" : ""}>${label}</option>`).join("")}<option value="none" ${filters.processResult === "none" ? "selected" : ""}>尚未关联笔面记录</option></select></label>
           ${activeFilterCount ? `<button data-action="clear-pipeline-filters">清除筛选</button>` : ""}
         </div>
       </details>
     </div>
     </div>
+    ${renderPipelineProgress()}
     <div class="pipeline-list-meta"><span id="pipeline-result-count">显示 ${rows.length} 条 · 修改后自动保存</span></div>
     <div class="panel pipeline-table-wrap">
       <table class="pipeline-table application-list-table">
-        <thead><tr><th>公司 / 岗位</th><th>当前阶段</th><th>环节状态</th><th>下一步</th><th></th></tr></thead>
+        <thead><tr><th>公司</th><th>岗位</th><th>当前阶段</th><th>环节状态</th><th>查询状态</th><th>下一步</th><th></th></tr></thead>
         <tbody>${rows.map(app => {
           const job = state.jobs.find(item => item.id === app.jobId);
           const interview = currentProcessRecord(app);
@@ -2537,14 +2565,16 @@ function renderPipeline() {
           const radarLinked = radarJobs.some(item => item.id === job.id);
           const radarCompanyMatch = radarJobs.find(item => companyKeysMatch(item.company, job.company));
           return `<tr data-application-row="${app.id}">
-            <td class="application-identity"><div class="table-company"><button class="record-edit-target record-company" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息" title="点击编辑投递信息">${escapeHtml(job.company)}</button></div><button class="record-edit-target record-position" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的岗位与地点" title="${escapeHtml(job.role)} · 点击编辑"><strong class="table-role">${escapeHtml(job.role)}</strong><span class="table-sub table-job-location">${escapeHtml(job.location || "地点待确认")}</span></button></td>
-            <td class="application-stage" data-label="当前阶段"><select class="table-select stage-${app.status}" data-app-status="${app.id}" aria-label="${escapeHtml(job.company)}当前进度">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}" ${app.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td>
+            <td class="application-company" data-label="公司"><div class="table-company"><button class="record-edit-target record-company" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息" title="点击编辑投递信息">${escapeHtml(job.company)}</button></div></td>
+            <td class="application-position" data-label="岗位"><button class="record-edit-target record-position" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的岗位与地点" title="${escapeHtml(job.role)} · 点击编辑"><strong class="table-role">${escapeHtml(job.role)}</strong><span class="table-sub table-job-location">${escapeHtml(job.location || "地点待确认")}</span></button></td>
+            <td class="application-stage" data-label="当前阶段"><select class="table-select stage-${app.status}" data-app-status="${app.id}" aria-label="${escapeHtml(job.company)}当前进度">${renderApplicationStageOptions(app.status)}</select></td>
             <td class="application-result" data-label="环节状态">${renderProcessStateCell(app, interview, job)}</td>
+            <td class="application-progress-link" data-label="查询状态">${progressUrl ? `<a href="${escapeHtml(progressUrl)}" target="_blank" rel="noopener noreferrer" aria-label="查询${escapeHtml(job.company)}的投递状态">查询状态 ↗</a>` : `<button class="table-link-button" data-expand-application="${app.id}" aria-controls="application-extra-${app.id}">补充链接</button>`}</td>
             <td class="application-next" data-label="下一步"><input class="table-input next" value="${escapeHtml(app.next || "")}" data-app-field="next" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}下一步" placeholder="填写明确行动"></td>
             <td class="application-more"><button class="btn small" data-expand-application="${app.id}" aria-expanded="${expandedApplicationId === app.id}" aria-controls="application-extra-${app.id}">${expandedApplicationId === app.id ? "收起" : "详情"}</button></td>
-          </tr><tr class="application-extra-row" data-application-extra="${app.id}" id="application-extra-${app.id}" ${expandedApplicationId === app.id ? "" : "hidden"}><td colspan="5"><div class="record-extra-grid"><div class="record-extra-field"><span>投递日期</span><input class="table-input date" type="date" value="${escapeHtml(app.appliedAt || "")}" data-app-field="appliedAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}投递日期"></div><div class="record-extra-field"><span>查看状态网址</span><div class="progress-link-cell"><input class="table-input url" type="url" value="${escapeHtml(app.progressUrl || "")}" data-app-field="progressUrl" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}查看状态网址" placeholder="https://">${progressUrl ? `<a href="${escapeHtml(progressUrl)}" target="_blank" rel="noopener noreferrer">查看状态</a>` : `<span>未填写</span>`}</div></div><div class="record-extra-field"><span>提醒日期</span><input class="table-input date" type="date" value="${escapeHtml(app.followUpAt || "")}" data-app-field="followUpAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}提醒日期"></div><div class="record-extra-field"><span>笔面记录</span>${interview ? `<button class="table-link-button" data-open-interview="${interview.id}">${escapeHtml(interview.round)} · ${escapeHtml(processResultLabel(interview))} →</button>` : `<span class="table-muted">尚未关联</span>`}</div><div class="record-extra-field"><span>更新时间</span><span class="table-updated">${escapeHtml(formatApplicationUpdate(app))}</span></div></div><div class="record-extra-actions"><button class="btn small" data-edit-application="${app.id}">编辑岗位信息</button><div class="table-row-actions">${radarLinked ? `<button data-open-radar-job="${job.id}">查看岗位</button>` : radarCompanyMatch ? `<button data-open-radar-company="${escapeHtml(job.company)}">查找岗位</button>` : ""}${app.archivedAt ? `<button data-restore-app="${app.id}">恢复</button><button class="danger" data-remove-app="${app.id}">删除</button>` : `<button data-archive-app="${app.id}">归档</button>`}</div></div></td>
+          </tr><tr class="application-extra-row" data-application-extra="${app.id}" id="application-extra-${app.id}" ${expandedApplicationId === app.id ? "" : "hidden"}><td colspan="7"><div class="record-extra-grid"><div class="record-extra-field"><span>投递日期</span><input class="table-input date" type="date" value="${escapeHtml(app.appliedAt || "")}" data-app-field="appliedAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}投递日期"></div><div class="record-extra-field"><span>查看状态网址</span><div class="progress-link-cell"><input class="table-input url" type="url" value="${escapeHtml(app.progressUrl || "")}" data-app-field="progressUrl" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}查看状态网址" placeholder="https://">${progressUrl ? `<a href="${escapeHtml(progressUrl)}" target="_blank" rel="noopener noreferrer">查看状态</a>` : `<span>未填写</span>`}</div></div><div class="record-extra-field"><span>提醒日期</span><input class="table-input date" type="date" value="${escapeHtml(app.followUpAt || "")}" data-app-field="followUpAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}提醒日期"></div><div class="record-extra-field"><span>笔面记录</span>${interview ? `<button class="table-link-button" data-open-interview="${interview.id}">${escapeHtml(interview.round)} · ${escapeHtml(processResultLabel(interview))} →</button>` : `<span class="table-muted">尚未关联</span>`}</div><div class="record-extra-field"><span>更新时间</span><span class="table-updated">${escapeHtml(formatApplicationUpdate(app))}</span></div></div><div class="record-extra-actions"><button class="btn small" data-edit-application="${app.id}">编辑岗位信息</button><div class="table-row-actions">${radarLinked ? `<button data-open-radar-job="${job.id}">查看岗位</button>` : radarCompanyMatch ? `<button data-open-radar-company="${escapeHtml(job.company)}">查找岗位</button>` : ""}${app.archivedAt ? `<button data-restore-app="${app.id}">恢复</button><button class="danger" data-remove-app="${app.id}">删除</button>` : `<button data-archive-app="${app.id}">归档</button>`}</div></div></td>
           </tr>`;
-        }).join("") || `<tr><td colspan="5"><div class="empty-state">${filters.scope === "archived" ? "还没有归档记录。结束或暂时不跟进的岗位可以归档到这里。" : "还没有投递记录。可以从岗位详情一键记录，也可以在这里登记其他网站上的投递。"}</div></td></tr>`}</tbody>
+        }).join("") || `<tr><td colspan="7"><div class="empty-state">${filters.scope === "archived" ? "还没有归档记录。结束或暂时不跟进的岗位可以归档到这里。" : "还没有投递记录。可以从岗位详情一键记录，也可以在这里登记其他网站上的投递。"}</div></td></tr>`}</tbody>
       </table>
     </div>
   `);
@@ -2568,11 +2598,11 @@ function updateApplicationDetails(applicationId, data) {
 }
 
 function renderProcessStateCell(app, record, job) {
-  if (!record && !PROCESS_STAGES.includes(app.status)) {
-    const label = app.status === "applied" ? "等待筛选" : isClosedApplicationStatus(app.status) ? "流程已结束" : "推进中";
+  if (!PROCESS_STAGES.includes(app.status)) {
+    const label = app.status === "applied" ? "等待筛选" : app.status === "offer" ? "已获 Offer" : isClosedApplicationStatus(app.status) ? "流程已结束" : "推进中";
     return `<span class="process-state-static">${escapeHtml(label)}</span>`;
   }
-  const result = record?.result || "pending";
+  const result = record && stageForProcessRecord(record.round) === app.status ? record.result || "pending" : "pending";
   return `<select class="table-select process-result-${result}" data-process-result="${app.id}" aria-label="${escapeHtml(job.company)}环节状态">
     ${PROCESS_RESULT_OPTIONS.map(([value, label]) => `<option value="${value}" ${result === value ? "selected" : ""}>${label}</option>`).join("")}
   </select>`;
@@ -2591,7 +2621,8 @@ function filterPipelineRowsInPlace() {
   document.querySelectorAll("[data-application-row]").forEach(row => {
     const application = state.applications.find(app => app.id === row.dataset.applicationRow);
     const job = state.jobs.find(job => job.id === application?.jobId);
-    const searchable = [row.textContent, job?.company, job?.role, job?.location, application?.next, application?.notes].join(" ").toLowerCase();
+    const record = application && currentProcessRecord(application);
+    const searchable = [job?.company, job?.role, job?.location, applicationStageLabel(application?.status), record ? processResultLabel(record) : "", application?.next, application?.notes].join(" ").toLowerCase();
     const match = !query || searchable.includes(query);
     row.hidden = !match;
     const extra = document.getElementById(`application-extra-${row.dataset.applicationRow}`);
@@ -3591,6 +3622,15 @@ document.addEventListener("click", (event) => {
   const pipelineScope = event.target.closest("[data-pipeline-scope]");
   if (pipelineScope) {
     state.pipelineFilters.scope = pipelineScope.dataset.pipelineScope;
+    saveState();
+    render();
+    return;
+  }
+
+  const pipelineProgress = event.target.closest("[data-pipeline-progress]");
+  if (pipelineProgress) {
+    state.pipelineFilters = { ...initialState.pipelineFilters, scope: state.pipelineFilters.scope, status: pipelineProgress.dataset.pipelineProgress };
+    expandedApplicationId = "";
     saveState();
     render();
     return;

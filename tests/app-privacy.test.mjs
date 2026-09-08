@@ -35,6 +35,40 @@ function app(t, overrides = {}) {
   return { run:code=>vm.runInContext(code,context),writes };
 }
 
+test("pipeline separates company and role and exposes progress links without expanding", async t => {
+  const { run } = app(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"j",company:"示例公司",role:"产品经理",location:"上海"}]; state.applications=[{id:"a",jobId:"j",status:"written",progressUrl:"https://join.qq.com/"}];');
+  const html = run("renderPipeline()");
+  const mainRow = html.match(/<tr data-application-row="a">([\s\S]*?)<\/tr>/)[1];
+  assert.match(html, /<th>公司<\/th><th>岗位<\/th>/);
+  assert.equal((mainRow.match(/<td\b/g) || []).length, 7);
+  assert.match(mainRow, /href="https:\/\/join.qq.com\/"/);
+  assert.match(mainRow, /查询状态 ↗/);
+  assert.match(html, /colspan="7"/);
+  run('state.applications[0].progressUrl="javascript:alert(1)";');
+  assert.doesNotMatch(run("renderPipeline()"), /href="javascript:/);
+  assert.match(run("renderPipeline()"), /补充链接/);
+});
+
+test("pipeline counts current stages within archive scope, persists grouped filters and keeps completed rounds", async t => {
+  const { run } = app(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"j",company:"示例公司",role:"产品经理"}]; state.applications=[{id:"a",jobId:"j",status:"written"},{id:"b",jobId:"j",status:"interview_2"},{id:"c",jobId:"j",status:"rejected_assessment"},{id:"d",jobId:"j",status:"offer",archivedAt:"2026-09-01"}];');
+  assert.equal(run('pipelineProgressCounts().reduce((sum, item)=>sum+item.count,0)'), 3);
+  assert.equal(run('pipelineProgressCounts().find(item=>item.value==="interview_group").count'), 1);
+  assert.equal(run('pipelineProgressCounts().find(item=>item.value==="rejected_group").count'), 1);
+  run('state.pipelineFilters.scope="archived";');
+  assert.equal(run('pipelineProgressCounts().find(item=>item.value==="offer").count'), 1);
+  assert.equal(run('restoreState({pipelineFilters:{status:"interview_group"}}).pipelineFilters.status'), "interview_group");
+  assert.equal(run('restoreState({pipelineFilters:{status:"rejected_group"}}).pipelineFilters.status'), "rejected_group");
+  run('const record=ensureProcessRecord(state.applications[0]); updateProcessResult(record,"waiting");');
+  assert.equal(run('state.applications[0].status'), "written");
+  assert.equal(run('currentProcessRecord(state.applications[0]).result'), "waiting");
+  run('state.applications[0].status="salary";');
+  assert.doesNotMatch(run('renderProcessStateCell(state.applications[0], record, state.jobs[0])'), /data-process-result/);
+});
+
 test("practice overview keeps recommendations in cards with labelled metrics and a mixed entry", async t => {
   const { run } = app(t);
   await run('applyCloudUser({id:"A"})');
