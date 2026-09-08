@@ -46,6 +46,7 @@ test("home omits the next-action module while retaining progress and actionable 
   assert.match(html, /完成笔试/);
   assert.match(html, /data-reminder-key=/);
   assert.match(html, /data-open-application="application"/);
+  assert.equal((html.match(/class="home-morale-row"/g) || []).length, 1);
 });
 
 test("agenda completion survives cloud round trip, leaves progress intact and can be undone", async t => {

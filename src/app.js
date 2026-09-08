@@ -1,3 +1,4 @@
+import { captureWorkspaceFocus, syncWorkspaceUi, handleWorkspaceKeydown } from "./workspace-ui.js";
 import { PRACTICE_CATEGORIES, PRACTICE_PAPERS, SEED_QUESTIONS, categoryById, validateImportedQuestions } from "./question-bank.js";
 import { COMMUNITY_BANK_SOURCE, createCommunityPaper, loadCommunityQuestionBank } from "./community-question-bank.js";
 import { FALLBACK_RADAR_JOBS, INDUSTRY_GROUPS, JOB_REFRESH_WORKFLOW_URL, JOB_ROLE_CATEGORIES, JOB_SOURCES, companyCareerUrl, jobRoleCategories, loadRadarJobs } from "./job-radar.js";
@@ -185,6 +186,25 @@ const PROCESS_RESULT_OPTIONS = [
 ];
 
 let state = structuredClone(initialState);
+let expandedApplicationId = "";
+let radarMobileDetail = false;
+let radarReturnScroll = 0;
+
+function showMobileRadarDetail() {
+  if (!window.matchMedia?.("(max-width: 760px)")?.matches) return;
+  if (!radarMobileDetail) radarReturnScroll = window.scrollY || 0;
+  radarMobileDetail = true;
+  document.querySelector(".job-radar-layout")?.classList.add("detail-open");
+  window.scrollTo({ top: 0 });
+}
+
+function closeMobileRadarDetail() {
+  radarMobileDetail = false;
+  document.querySelector(".job-radar-layout")?.classList.remove("detail-open");
+  window.scrollTo({ top: radarReturnScroll });
+  document.querySelector(`[data-radar-job="${state.selectedRadarJob}"]`)?.focus({ preventScroll: true });
+}
+
 let cloudUser = null;
 let cloudSyncStatus = cloudConfigured ? "checking" : "local";
 let authEpoch = 0;
@@ -1102,8 +1122,8 @@ function saveRadarJob(job) {
 }
 
 function render() {
+  const previousFocus = captureWorkspaceFocus(document);
   loginCaptcha.clear();
-  const [title, subtitle] = viewMeta[state.activeView];
   const activeViewLocked = isProtectedView(state.activeView) && !hasPrivateAccess();
   document.querySelector("#app").innerHTML = `
     <div class="app-shell">
@@ -1127,12 +1147,12 @@ function render() {
         <header class="topbar">
           <div class="crumb">
             <button class="btn ghost mobile-menu" data-action="toggle-menu" aria-label="打开菜单">菜单</button>
-            <strong>${title}</strong><span>${subtitle}</span>
+            <strong class="workspace-brand">OfferFlow</strong>
           </div>
           <div class="top-actions">
             <button class="btn ghost mailbox-button" data-modal="mailbox">邮箱</button>
             <span class="cloud-status ${cloudSyncStatus === "error" ? "error" : ""}">${cloudStatusLabel()}</span>
-            ${cloudUser ? `<button class="btn account-button" data-modal="account">${escapeHtml(state.profile.name || cloudUser.email || "账号与数据")}</button>` : `<button class="btn" data-modal="account">登录同步</button>`}
+            ${cloudUser ? `<button class="btn account-button" data-modal="account" aria-label="账号与数据">${escapeHtml(state.profile.name || cloudUser.email || "账号与数据")}</button>` : `<button class="btn account-button" data-modal="account">登录</button>`}
             ${activeViewLocked ? `<span class="privacy-status">登录后可用</span>` : ""}
           </div>
         </header>
@@ -1150,6 +1170,7 @@ function render() {
   `;
   hydrateInterviewRecordings();
   updateLoginRequest();
+  syncWorkspaceUi(document, previousFocus);
   if (state.activeView === "jobs" && state.jobView === "radar" && state.selectedRadarJob) {
     requestAnimationFrame(() => scrollSelectedRadarIntoView());
   }
@@ -1267,12 +1288,12 @@ function renderHome() {
   if (!hasPrivateAccess()) return renderPrivacyGate("home", "求职概览");
   if (!state.profile.name && !state.applications.length && !state.projects.length) {
     return viewWrap("home", `
-      <div class="home-morale-row">${renderDailyEncouragement()}${renderWoodenFish()}</div>
-      <div class="workspace-empty">
+        <div class="workspace-empty">
         <span class="workspace-empty-mark" aria-hidden="true">OF</span>
         <div><h1>先完善你的基础资料</h1></div>
         <div class="workspace-empty-actions"><button class="btn primary" data-modal="profile">填写基础资料</button><button class="btn" data-view="jobs">浏览岗位</button></div>
       </div>
+      <div class="home-morale-row">${renderDailyEncouragement()}${renderWoodenFish()}</div>
     `);
   }
   const reminders = workspaceReminders();
@@ -1294,7 +1315,7 @@ function renderHome() {
         <button class="btn" data-modal="quick-add">记录投递</button>
       </div>
     </header>
-    <div class="home-morale-row">${renderDailyEncouragement()}${renderWoodenFish()}</div>
+
     <section class="home-progress-overview panel" aria-labelledby="home-progress-title">
       <div class="home-section-head"><div><h2 id="home-progress-title">阶段分布</h2></div><button class="text-action" data-view="pipeline">查看全部</button></div>
       <div class="home-metrics">
@@ -1306,6 +1327,7 @@ function renderHome() {
         <button data-home-stage="offer"><strong>${appCount("offer")}</strong><span>Offer</span></button>
       </div>
     </section>
+    <div class="home-morale-row">${renderDailyEncouragement()}${renderWoodenFish()}</div>
     <div class="home-main-grid">
       <section class="home-agenda panel">
         ${renderHomeAgenda(reminders)}
@@ -1333,10 +1355,10 @@ function renderPractice() {
   return viewWrap("practice", `
     <div class="page-heading practice-heading">
       <div><h1>北森职测训练</h1><p>共 ${questionBank().length} 道可练题${communityBankStatus === "loading" ? "，社区题库正在载入" : ""}${hasPrivateAccess() ? "" : "；登录可保存错题与成绩"}。</p></div>
-      <div class="practice-import-actions">
+      <details class="compact-menu practice-import-actions"><summary>导入题库</summary><div class="compact-menu-body">
         <label class="btn" for="question-import">添加我的题库</label>
         <small>支持 JSON · <a href="${assetUrl("example-question-bank.json")}" download>下载模板</a> · 仅自己可见</small>
-      </div>
+</div></details>
       <input id="question-import" type="file" accept="application/json,.json" hidden>
     </div>
     <div class="practice-tabs" role="tablist" aria-label="刷题模块">
@@ -1349,19 +1371,7 @@ function renderPractice() {
 function renderPracticeOverview(stats) {
   const weakest = getWeakestCategory();
   return `
-    <div class="practice-summary">
-      <div class="practice-summary-main">
-        <span class="practice-kicker">今日建议</span>
-        <h2>${weakest ? `优先练习${weakest.name}` : "先测一测当前水平"}</h2>
-        
-        <button class="btn primary" data-start-category="${weakest?.id || "mixed"}">${weakest ? "开始专项" : "开始测试"}</button>
-      </div>
-      <div class="practice-summary-stats">
-        <div><strong>${stats.accuracy}%</strong><span>历史正确率</span></div>
-        <div><strong>${stats.averageSeconds || 0}s</strong><span>平均每题</span></div>
-        <div><strong>${state.wrongQuestionIds.length}</strong><span>待复习错题</span></div>
-      </div>
-    </div>
+    <div class="practice-continue"><span>${weakest ? `建议练习：${weakest.name}` : "开始一次混合测评，了解当前水平"}</span><button class="btn primary" data-start-category="${weakest?.id || "mixed"}">${weakest ? "开始专项" : "开始测评"}</button></div>
     <section class="practice-section">
       <div class="practice-section-head"><div><h2>专项训练</h2></div></div>
       <div class="category-grid">
@@ -1577,11 +1587,11 @@ function submitPractice() {
 
 function renderJobs() {
   const activeTab = state.jobView || "radar";
-  const isRulesView = activeTab === "rules";
+  const pageTitle = { radar: "岗位雷达", rules: "投递规则", companies: "岗位诊断", sources: "数据来源" }[activeTab];
   return viewWrap("jobs", `
     <div class="page-heading jobs-heading">
-      <div><h1>${isRulesView ? "大厂投递规则" : "岗位雷达"}</h1></div>
-      ${isRulesView ? "" : `<div class="heading-actions"><button class="btn" data-modal="job-refresh-info">管理员抓取</button><button class="btn" data-action="refresh-radar" ${radarLoading ? "disabled" : ""}>${radarLoading ? "正在检查…" : "检查新增"}</button><button class="btn primary" data-modal="quick-add">手动添加</button></div>`}
+      <div><h1>${pageTitle}</h1></div>
+      ${activeTab !== "radar" ? "" : `<div class="heading-actions"><button class="btn" data-action="refresh-radar" ${radarLoading ? "disabled" : ""}>${radarLoading ? "正在检查…" : "检查新增"}</button><button class="btn primary" data-modal="quick-add">手动添加</button></div>`}
     </div>
     <div class="practice-tabs job-tabs jobs-section-tabs" role="tablist" aria-label="岗位模块">
       ${[["radar", "岗位雷达"], ["rules", "投递规则"], ["companies", "岗位诊断"], ["sources", "数据来源"]].map(([id, label]) => `<button class="practice-tab ${activeTab === id ? "active" : ""}" data-job-tab="${id}" role="tab">${label}${id === "companies" && state.companyReviewQueue.length ? ` ${state.companyReviewQueue.length}` : ""}</button>`).join("")}
@@ -1615,13 +1625,13 @@ function renderApplicationRules() {
           <strong class="rule-signal">${escapeHtml(rule.signal)}</strong>
         </header>
         <div class="rule-quota"><span>核心限制</span><strong>${escapeHtml(rule.quota)}</strong></div>
-        <dl>
+        <details class="rule-details"><summary>查看完整规则与来源</summary><dl>
           <div><dt>能否并行</dt><dd>${escapeHtml(rule.parallel)}</dd></div>
           <div><dt>未通过后</dt><dd>${escapeHtml(rule.retry)}</dd></div>
           <div><dt>修改岗位</dt><dd>${escapeHtml(rule.change)}</dd></div>
         </dl>
         <details class="rule-advice copy-help"><summary>投递建议</summary><p>${escapeHtml(rule.advice)}</p></details>
-        <footer><span class="rule-evidence ${rule.evidence}">${escapeHtml(rule.evidenceLabel)}</span><div>${rule.sources.map(source => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.label)}</a>`).join("")}</div></footer>
+        <footer><span class="rule-evidence ${rule.evidence}">${escapeHtml(rule.evidenceLabel)}</span><div>${rule.sources.map(source => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.label)}</a>`).join("")}</div></footer></details>
       </article>`).join("")}
     </div>
     <div class="large-empty application-rule-empty" id="application-rule-empty" ${visibleCount ? "hidden" : ""}><strong>暂时没有找到这家公司</strong><p>可以换一个公司名称，或清空搜索框查看全部规则。</p></div>
@@ -1819,6 +1829,7 @@ function selectRadarJob(jobId) {
   const detailTitle = document.querySelector(".radar-detail-panel .radar-pane-title span");
   if (detailTitle) detailTitle.textContent = job.company;
   updateRadarActivityUi(job);
+  showMobileRadarDetail();
   saveState();
 }
 
@@ -1886,10 +1897,6 @@ function renderJobRadar() {
   return `
     <section class="panel radar-control-panel">
       <div class="radar-control-top">
-        <div class="radar-preference-bar">
-          <div><span>当前偏好</span><strong>${displayJobText(state.profile.targetRole || "目标岗位")} · ${displayJobText(state.profile.targetCity || "目标城市待补")}</strong></div>
-          <button class="text-action" data-modal="profile">修改</button>
-        </div>
         <div class="radar-search-row">
           <input class="search" id="radar-search" type="search" value="${escapeHtml(state.jobFilters.query)}" placeholder="搜索岗位、公司或城市" aria-label="搜索校招岗位">
           <button class="btn" data-action="clear-radar-filters">清除</button>
@@ -1903,6 +1910,11 @@ function renderJobRadar() {
         ].map(([value, label, count]) => `<button class="${state.jobFilters.inbox === value ? "active" : ""}" data-inbox-filter="${value}"><span>${label}</span><strong>${count}</strong></button>`).join("")}
         <button data-open-pipeline-from-radar><span>投递记录</span><strong>${state.applications.length}</strong></button>
       </div>
+      <details class="radar-advanced"><summary>筛选与偏好</summary><div class="radar-advanced-body">
+        <div class="radar-preference-bar">
+          <div><span>当前偏好</span><strong>${displayJobText(state.profile.targetRole || "目标岗位")} · ${displayJobText(state.profile.targetCity || "目标城市待补")}</strong></div>
+          <button class="text-action" data-modal="profile">修改</button>
+        </div>
       <div class="radar-toolbar">
         <label><span>岗位方向</span><select id="radar-role-category">${JOB_ROLE_CATEGORIES.map(value => `<option ${state.jobFilters.roleCategory === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
         <label><span>行业</span><select id="radar-industry"><option>全部行业</option>${industries.map(value => `<option ${state.jobFilters.industry === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}</select></label>
@@ -1911,11 +1923,13 @@ function renderJobRadar() {
         <label><span>浏览状态</span><select id="radar-inbox">${["全部岗位", "新增", "未看", "已看", "已收藏", "有投递记录", "已隐藏"].map(value => `<option ${state.jobFilters.inbox === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
         <label><span>排序方式</span><select id="radar-sort">${["偏好优先", "最新收录", "公司名称"].map(value => `<option ${state.jobFilters.sort === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>
       </div>
-      <div class="radar-result-meta"><span id="radar-result-count">共 ${companyGroups.length} 家公司 · ${jobs.length} 个岗位</span><span>岗位池 ${radarJobs.length.toLocaleString("zh-CN")} 条，${stats.companies.toLocaleString("zh-CN")} 家公司 · ${stats.verified.toLocaleString("zh-CN")} 条官方域名已核验 · ${stats.blocked.toLocaleString("zh-CN")} 条异常链接已暂停${state.jobFilters.inbox === "新增" && inboxStats.newCount ? ` <button class="text-action" data-action="clear-new-batch">标记已处理</button>` : ""}</span></div>
+      <div class="radar-source-summary"><span>岗位池 ${radarJobs.length.toLocaleString("zh-CN")} 条，${stats.companies.toLocaleString("zh-CN")} 家公司 · ${stats.verified.toLocaleString("zh-CN")} 条官方域名已核验 · ${stats.blocked.toLocaleString("zh-CN")} 条异常链接已暂停${state.jobFilters.inbox === "新增" && inboxStats.newCount ? ` <button class="text-action" data-action="clear-new-batch">标记已处理</button>` : ""}</span></div></div></details>
+      <div class="radar-result-meta"><span id="radar-result-count">共 ${companyGroups.length} 家公司 · ${jobs.length} 个岗位</span></div>
     </section>
-    <div class="job-radar-layout">
+    <div class="job-radar-layout ${radarMobileDetail ? "detail-open" : ""}">
       <section class="panel radar-list-panel"><div class="radar-pane-title"><strong>公司列表</strong><span>${state.jobFilters.sort}</span></div><div class="job-list" id="job-list">${renderCompanyRows(companyGroups.slice(0, 200))}</div></section>
-      <section class="panel radar-detail-panel"><div class="radar-pane-title"><strong>公司岗位</strong><span>${selected ? displayJobText(selected.company) : "未选择"}</span></div><div class="detail-stage" id="job-detail">${selected ? renderRadarDetail(selected, jobs) : `<div class="large-empty"><strong>没有符合条件的岗位</strong><p>减少筛选条件后再试。</p></div>`}</div></section>
+      <section class="panel radar-detail-panel"><div class="radar-pane-title"><button class="btn small radar-back" data-radar-back>← 返回列表</button><strong>公司岗位</strong><span>${selected ? displayJobText(selected.company) : "未选择"}</span></div><div class="detail-stage" id="job-detail">${selected ? renderRadarDetail(selected, jobs) : `<div class="large-empty"><strong>没有符合条件的岗位</strong><p>减少筛选条件后再试。</p></div>`}</div></section>
+
     </div>
   `;
 }
@@ -1989,7 +2003,7 @@ function renderCompanyMatches() {
     .map(item => ({ ...item, roles: companyDirections(item.jobs) }));
   const completedCount = companies.filter(item => state.companyDiagnoses[item.company]).length;
   return `
-    <div class="company-match-intro"><div><span class="practice-kicker">岗位诊断</span><h2>${companies.length ? `待记录 ${companies.length - completedCount} 家 · 已完成 ${completedCount} 家` : "选择需要分析的公司"}</h2><p>在助手对话中分析，将结论保存到这里。</p></div><button class="btn" data-job-tab="radar">继续浏览岗位</button></div>
+    ${companies.length ? `<div class="company-match-intro"><div><span class="practice-kicker">岗位诊断</span><h2>${companies.length ? `待记录 ${companies.length - completedCount} 家 · 已完成 ${completedCount} 家` : "选择需要分析的公司"}</h2><p>在助手对话中分析，将结论保存到这里。</p></div><button class="btn" data-job-tab="radar">继续浏览岗位</button></div>` : ""}
     ${companies.length ? `<div class="company-grid">
       ${companies.map(item => `<article class="company-card">
         <div class="company-card-top"><div><span>${escapeHtml(item.jobs[0].industry)}</span><h3>${escapeHtml(item.company)}</h3></div><strong class="review-state ${state.companyDiagnoses[item.company] ? "done" : ""}">${state.companyDiagnoses[item.company] ? "已记录" : "待诊断"}</strong></div>
@@ -2022,7 +2036,7 @@ function hasRealProfile() {
 function renderJobSources() {
   return `
     <div class="source-layout">
-      <section class="panel pad"><div class="panel-title">岗位数据来源</div><div class="source-list">
+      <section class="panel pad"><div class="section-heading-line"><div class="panel-title">岗位数据来源</div><button class="btn small" data-modal="job-refresh-info">管理员抓取</button></div><div class="source-list">
         ${radarSourceStatus.map(source => `<article class="source-card"><span class="source-dot ${source.state}"></span><div><strong>${escapeHtml(source.name)}</strong><p>${escapeHtml(source.cadence)} · ${escapeHtml(source.license)}</p></div><div class="source-count">${source.state === "loading" ? "连接中" : source.state === "ok" ? `${source.count.toLocaleString("zh-CN")} 条` : "暂不可用"}</div><a href="${escapeHtml(source.homepage)}" target="_blank" rel="noopener noreferrer">查看来源</a></article>`).join("")}
       </div><div class="source-note"><strong>投递前核对</strong><p>请在招聘官网确认届别、岗位要求和截止时间。</p></div></section>
       <section class="panel pad feishu-sync-card"><div class="sync-head"><div><div class="panel-title">公开与私人数据</div></div><span class="tag success">已拆分</span></div>
@@ -2166,6 +2180,13 @@ function renderResumeVault() {
         <div><strong>${state.resumeDocuments?.length || 0}</strong><span>简历文件</span></div>
       </div>
     </section>
+    <div class="resume-file-priority">        <section class="panel pad vault-section">
+          <div class="vault-head"><div><h2>简历文件</h2><p>文件仅存当前浏览器</p></div><label class="btn small file-button">添加文件<input id="resume-document" type="file" accept=".pdf,.doc,.docx,.txt" hidden></label></div>
+          <div class="document-list">
+            ${(state.resumeDocuments || []).map(document => `<article class="document-row"><div class="document-mark">${escapeHtml(document.extension || "CV")}</div><div><strong>${escapeHtml(document.name)}</strong><span>${escapeHtml(document.sizeLabel)} / ${escapeHtml(document.addedAt)}</span></div><div class="document-actions"><button class="btn small ghost" data-download-document="${document.id}">下载</button><label class="btn small ghost file-button">补回文件<input type="file" accept=".pdf,.doc,.docx,.txt" data-restore-document="${document.id}" hidden></label><button class="btn small ghost danger" data-remove-document="${document.id}">删除</button></div></article>`).join("") || `<div class="inline-empty">支持 PDF、Word、文本文件。</div>`}
+          </div>
+          <p class="field-help">换设备或网址后，点击“补回文件”选择同名原件。</p>
+        </section></div>
     <div class="vault-layout">
       <div class="stack">
         <section class="panel pad vault-section">
@@ -2198,13 +2219,7 @@ function renderResumeVault() {
         </section>
       </div>
       <div class="stack">
-        <section class="panel pad vault-section">
-          <div class="vault-head"><div><h2>简历文件</h2><p>文件仅存当前浏览器</p></div><label class="btn small file-button">添加文件<input id="resume-document" type="file" accept=".pdf,.doc,.docx,.txt" hidden></label></div>
-          <div class="document-list">
-            ${(state.resumeDocuments || []).map(document => `<article class="document-row"><div class="document-mark">${escapeHtml(document.extension || "CV")}</div><div><strong>${escapeHtml(document.name)}</strong><span>${escapeHtml(document.sizeLabel)} / ${escapeHtml(document.addedAt)}</span></div><div class="document-actions"><button class="btn small ghost" data-download-document="${document.id}">下载</button><label class="btn small ghost file-button">补回文件<input type="file" accept=".pdf,.doc,.docx,.txt" data-restore-document="${document.id}" hidden></label><button class="btn small ghost danger" data-remove-document="${document.id}">删除</button></div></article>`).join("") || `<div class="inline-empty">支持 PDF、Word、文本文件。</div>`}
-          </div>
-          <p class="field-help">换设备或网址后，点击“补回文件”选择同名原件。</p>
-        </section>
+
         <section class="panel pad vault-section">
           <div class="vault-head"><div><h2>常见问题答案库</h2></div><button class="btn small" data-modal="answer">添加回答</button></div>
           <div class="answer-library">
@@ -2218,9 +2233,6 @@ function renderResumeVault() {
 
 function renderResumeSkills() {
   return `
-    <section class="skill-intro panel pad">
-      <div><h2>网申填写助手</h2><p>复制指令到助手对话中使用。</p></div>
-    </section>
     <details class="source-note copy-help"><summary>首次使用与功能说明</summary><p>请在使用的助手中安装 job-application-agent，并确认标准简历和个人资料。本站提供调用指令，操作在助手中执行。</p><p><a href="https://github.com/vaibhavarora14/job-application-agent" target="_blank" rel="noreferrer">查看开源项目</a></p></details>
     <div class="resume-skill-grid">
       ${resumeSkillCards.map(skill => `
@@ -2284,8 +2296,8 @@ function renderResume() {
       <div><h1>简历资料与网申填写</h1></div>
       <button class="btn primary" data-modal="autofill">新建投递草稿</button>
     </div>
-    <nav class="resume-tabs" aria-label="简历与投递模块">
-      ${[["vault", "我的资料"], ["skills", "投递 Skills"], ["drafts", `投递草稿 ${state.applicationDrafts?.length || 0}`]].map(([id, label]) => `<button class="resume-tab ${currentTab === id ? "active" : ""}" data-resume-tab="${id}">${label}</button>`).join("")}
+    <nav class="resume-tabs" role="tablist" aria-label="简历与投递模块">
+      ${[["vault", "我的资料"], ["skills", "投递 Skills"], ["drafts", `投递草稿 ${state.applicationDrafts?.length || 0}`]].map(([id, label]) => `<button class="resume-tab ${currentTab === id ? "active" : ""}" data-resume-tab="${id}" role="tab">${label}</button>`).join("")}
     </nav>
     ${currentTab === "skills" ? renderResumeSkills() : currentTab === "drafts" ? renderResumeDrafts() : renderResumeVault()}
   `);
@@ -2328,12 +2340,12 @@ function renderInterview() {
       <div><h1>笔面准备与复盘</h1></div>
       <div class="heading-actions"><button class="btn" data-action="export-interviews">导出笔面记录</button><button class="btn primary" data-modal="interview-record">添加笔面试</button></div>
     </div>
-    <div class="interview-metrics" aria-label="按状态筛选笔面记录">
+    ${activeTab === "prep" ? "" : `<div class="interview-metrics" aria-label="按状态筛选笔面记录">
       <button class="${filters.status === "all" ? "active" : ""}" data-interview-status-filter="all"><span>${filters.stage === "all" ? "全部环节" : "当前环节"}</span><strong>${stageRecords.length}</strong></button>
       <button class="${filters.status === "scheduled" ? "active" : ""}" data-interview-status-filter="scheduled"><span>待进行</span><strong>${scheduled}</strong></button>
       <button class="${filters.status === "completed" ? "active" : ""}" data-interview-status-filter="completed"><span>已完成</span><strong>${completed}</strong><small>包括待结果和已出结果</small></button>
       <button class="${filters.status === "recording" ? "active" : ""}" data-interview-status-filter="recording"><span>已存录音</span><strong>${withRecording}</strong></button>
-    </div>
+    </div>`}
     <div class="practice-tabs interview-tabs" role="tablist" aria-label="笔面试模块">
       ${[["records", `环节记录 ${visibleRecords.length}`], ["review", "复盘记录"], ["prep", "备战清单"]].map(([id, label]) => `<button class="practice-tab ${activeTab === id ? "active" : ""}" data-interview-tab="${id}" role="tab">${label}</button>`).join("")}
     </div>
@@ -2514,8 +2526,8 @@ function renderPipeline() {
     </div>
     <div class="pipeline-list-meta"><span id="pipeline-result-count">显示 ${rows.length} 条 · 修改后自动保存</span></div>
     <div class="panel pipeline-table-wrap">
-      <table class="pipeline-table">
-        <thead><tr><th>公司</th><th>岗位</th><th>当前阶段</th><th>环节状态</th><th>投递日期</th><th>查看状态</th><th>提醒日期</th><th>下一步</th><th>笔面记录</th><th>更新时间</th><th></th></tr></thead>
+      <table class="pipeline-table application-list-table">
+        <thead><tr><th>公司 / 岗位</th><th>当前阶段</th><th>环节状态</th><th>下一步</th><th></th></tr></thead>
         <tbody>${rows.map(app => {
           const job = state.jobs.find(item => item.id === app.jobId);
           const interview = currentProcessRecord(app);
@@ -2523,19 +2535,14 @@ function renderPipeline() {
           const radarLinked = radarJobs.some(item => item.id === job.id);
           const radarCompanyMatch = radarJobs.find(item => companyKeysMatch(item.company, job.company));
           return `<tr data-application-row="${app.id}">
-            <td><div class="table-company"><button class="record-edit-target record-company" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息" title="点击编辑投递信息">${escapeHtml(job.company)}</button></div></td>
-            <td><button class="record-edit-target record-position" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的岗位与地点" title="${escapeHtml(job.role)} · 点击编辑"><strong class="table-role">${escapeHtml(job.role)}</strong><span class="table-sub table-job-location">${escapeHtml(job.location || "地点待确认")}</span></button></td>
-            <td><select class="table-select stage-${app.status}" data-app-status="${app.id}" aria-label="${escapeHtml(job.company)}当前进度">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}" ${app.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td>
-            <td>${renderProcessStateCell(app, interview, job)}</td>
-            <td><input class="table-input date" type="date" value="${escapeHtml(app.appliedAt || "")}" data-app-field="appliedAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}投递日期"></td>
-            <td><div class="progress-link-cell"><input class="table-input url" type="url" value="${escapeHtml(app.progressUrl || "")}" data-app-field="progressUrl" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}查看状态网址" placeholder="https://">${progressUrl ? `<a href="${escapeHtml(progressUrl)}" target="_blank" rel="noopener noreferrer">查看状态</a>` : `<span>未填写</span>`}</div></td>
-            <td><input class="table-input date" type="date" value="${escapeHtml(app.followUpAt || "")}" data-app-field="followUpAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}提醒日期"></td>
-            <td><input class="table-input next" value="${escapeHtml(app.next || "")}" data-app-field="next" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}下一步" placeholder="填写明确行动"></td>
-            <td>${interview ? `<button class="table-link-button" data-open-interview="${interview.id}">${escapeHtml(interview.round)} · ${escapeHtml(processResultLabel(interview))} →</button>` : `<span class="table-muted">尚未关联</span>`}</td>
-            <td><span class="table-updated">${escapeHtml(formatApplicationUpdate(app))}</span></td>
-            <td><div class="table-row-actions">${radarLinked ? `<button data-open-radar-job="${job.id}">查看岗位</button>` : radarCompanyMatch ? `<button data-open-radar-company="${escapeHtml(job.company)}">查找岗位</button>` : ""}${app.archivedAt ? `<button data-restore-app="${app.id}">恢复</button><button class="danger" data-remove-app="${app.id}">删除</button>` : `<button data-archive-app="${app.id}">归档</button>`}</div></td>
+            <td class="application-identity"><div class="table-company"><button class="record-edit-target record-company" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息" title="点击编辑投递信息">${escapeHtml(job.company)}</button></div><button class="record-edit-target record-position" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的岗位与地点" title="${escapeHtml(job.role)} · 点击编辑"><strong class="table-role">${escapeHtml(job.role)}</strong><span class="table-sub table-job-location">${escapeHtml(job.location || "地点待确认")}</span></button></td>
+            <td class="application-stage" data-label="当前阶段"><select class="table-select stage-${app.status}" data-app-status="${app.id}" aria-label="${escapeHtml(job.company)}当前进度">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}" ${app.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td>
+            <td class="application-result" data-label="环节状态">${renderProcessStateCell(app, interview, job)}</td>
+            <td class="application-next" data-label="下一步"><input class="table-input next" value="${escapeHtml(app.next || "")}" data-app-field="next" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}下一步" placeholder="填写明确行动"></td>
+            <td class="application-more"><button class="btn small" data-expand-application="${app.id}" aria-expanded="${expandedApplicationId === app.id}" aria-controls="application-extra-${app.id}">${expandedApplicationId === app.id ? "收起" : "详情"}</button></td>
+          </tr><tr class="application-extra-row" data-application-extra="${app.id}" id="application-extra-${app.id}" ${expandedApplicationId === app.id ? "" : "hidden"}><td colspan="5"><div class="record-extra-grid"><div class="record-extra-field"><span>投递日期</span><input class="table-input date" type="date" value="${escapeHtml(app.appliedAt || "")}" data-app-field="appliedAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}投递日期"></div><div class="record-extra-field"><span>查看状态网址</span><div class="progress-link-cell"><input class="table-input url" type="url" value="${escapeHtml(app.progressUrl || "")}" data-app-field="progressUrl" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}查看状态网址" placeholder="https://">${progressUrl ? `<a href="${escapeHtml(progressUrl)}" target="_blank" rel="noopener noreferrer">查看状态</a>` : `<span>未填写</span>`}</div></div><div class="record-extra-field"><span>提醒日期</span><input class="table-input date" type="date" value="${escapeHtml(app.followUpAt || "")}" data-app-field="followUpAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}提醒日期"></div><div class="record-extra-field"><span>笔面记录</span>${interview ? `<button class="table-link-button" data-open-interview="${interview.id}">${escapeHtml(interview.round)} · ${escapeHtml(processResultLabel(interview))} →</button>` : `<span class="table-muted">尚未关联</span>`}</div><div class="record-extra-field"><span>更新时间</span><span class="table-updated">${escapeHtml(formatApplicationUpdate(app))}</span></div></div><div class="record-extra-actions"><button class="btn small" data-edit-application="${app.id}">编辑岗位信息</button><div class="table-row-actions">${radarLinked ? `<button data-open-radar-job="${job.id}">查看岗位</button>` : radarCompanyMatch ? `<button data-open-radar-company="${escapeHtml(job.company)}">查找岗位</button>` : ""}${app.archivedAt ? `<button data-restore-app="${app.id}">恢复</button><button class="danger" data-remove-app="${app.id}">删除</button>` : `<button data-archive-app="${app.id}">归档</button>`}</div></div></td>
           </tr>`;
-        }).join("") || `<tr><td colspan="11"><div class="empty-state">${filters.scope === "archived" ? "还没有归档记录。结束或暂时不跟进的岗位可以归档到这里。" : "还没有投递记录。可以从岗位详情一键记录，也可以在这里登记其他网站上的投递。"}</div></td></tr>`}</tbody>
+        }).join("") || `<tr><td colspan="5"><div class="empty-state">${filters.scope === "archived" ? "还没有归档记录。结束或暂时不跟进的岗位可以归档到这里。" : "还没有投递记录。可以从岗位详情一键记录，也可以在这里登记其他网站上的投递。"}</div></td></tr>`}</tbody>
       </table>
     </div>
   `);
@@ -2580,8 +2587,13 @@ function filterPipelineRowsInPlace() {
   const query = (state.pipelineFilters?.query || "").trim().toLowerCase();
   let visible = 0;
   document.querySelectorAll("[data-application-row]").forEach(row => {
-    const match = !query || row.textContent.toLowerCase().includes(query);
+    const application = state.applications.find(app => app.id === row.dataset.applicationRow);
+    const job = state.jobs.find(job => job.id === application?.jobId);
+    const searchable = [row.textContent, job?.company, job?.role, job?.location, application?.next, application?.notes].join(" ").toLowerCase();
+    const match = !query || searchable.includes(query);
     row.hidden = !match;
+    const extra = document.getElementById(`application-extra-${row.dataset.applicationRow}`);
+    if (extra) extra.hidden = !match || expandedApplicationId !== row.dataset.applicationRow;
     if (match) visible += 1;
   });
   const count = document.querySelector("#pipeline-result-count");
@@ -2946,7 +2958,7 @@ function renderModal() {
           <div class="field"><label for="edit-role">具体岗位名称</label><input id="edit-role" name="role" value="${escapeHtml(job.role)}" required placeholder="例如：AI 产品经理（校招）"></div>
           <div class="field"><label for="edit-location">工作地点</label><input id="edit-location" name="location" value="${escapeHtml(job.location || "")}" placeholder="例如：北京 / 上海"></div>
           <div class="field"><label for="edit-deadline">岗位截止时间</label><input id="edit-deadline" name="deadline" value="${escapeHtml(job.deadline || "")}" placeholder="例如：2026-10-31，或招满即止"></div>
-          <div class="field full"><label for="edit-job-url">岗位详情链接</label><input id="edit-job-url" name="applyUrl" type="url" value="${escapeHtml(job.applyUrl || "")}" placeholder="https://"><span class="field-help">投递状态查询网址仍可在列表的「查看状态」栏单独修改。</span></div>
+          <div class="field full"><label for="edit-job-url">岗位详情链接</label><input id="edit-job-url" name="applyUrl" type="url" value="${escapeHtml(job.applyUrl || "")}" placeholder="https://"><span class="field-help">投递状态查询网址可在记录的「详情」中单独修改。</span></div>
           <div class="field full"><label for="edit-application-notes">投递备注</label><textarea id="edit-application-notes" name="notes" rows="4" placeholder="例如：部门、岗位编号、内推情况等">${escapeHtml(application.notes || "")}</textarea></div>
         </div>
         <p class="privacy-error" role="alert"></p>
@@ -3068,10 +3080,29 @@ function renderModal() {
 }
 
 function modalShell(title, body) {
-  return `<div class="modal-backdrop" data-action="backdrop"><div class="modal" role="dialog" aria-modal="true" aria-label="${title}"><div class="modal-head"><h2>${title}</h2><button class="close-btn" data-action="close-modal" aria-label="关闭">×</button></div><div class="modal-body">${body}</div></div></div>`;
+  return `<div class="modal-backdrop" data-action="backdrop"><div class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-label="${title}"><div class="modal-head"><h2>${title}</h2><button class="close-btn" data-action="close-modal" aria-label="关闭">×</button></div><div class="modal-body">${body}</div></div></div>`;
 }
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-radar-back]")) {
+    closeMobileRadarDetail();
+    return;
+  }
+  const expandApplication = event.target.closest("[data-expand-application]");
+  if (expandApplication) {
+    if (!requirePrivateAccess()) return;
+    const id = expandApplication.dataset.expandApplication;
+    expandedApplicationId = expandedApplicationId === id ? "" : id;
+    document.querySelectorAll("[data-application-extra]").forEach(row => {
+      row.hidden = row.dataset.applicationExtra !== expandedApplicationId;
+    });
+    document.querySelectorAll("[data-expand-application]").forEach(button => {
+      const open = button.dataset.expandApplication === expandedApplicationId;
+      button.setAttribute("aria-expanded", String(open));
+      button.textContent = open ? "收起" : "详情";
+    });
+    return;
+  }
   const privateSelector = "[data-toggle-radar-save],[data-hide-radar-job],[data-analyze-radar],[data-diagnose-company],[data-review-company],[data-open-application],[data-open-company-applications],[data-download-document],[data-remove-document],[data-delete-answer],[data-copy-resume-skill]";
   const clickedAction = event.target.closest("[data-action]")?.dataset.action;
   if (clickedAction === "retry-captcha") {
@@ -3346,6 +3377,7 @@ document.addEventListener("click", (event) => {
   const jobTab = event.target.closest("[data-job-tab]");
   if (jobTab) {
     state.jobView = jobTab.dataset.jobTab;
+    radarMobileDetail = false;
     saveState();
     render();
     return;
@@ -3467,6 +3499,7 @@ document.addEventListener("click", (event) => {
       saveState();
       render();
       requestAnimationFrame(scrollSelectedRadarIntoView);
+      showMobileRadarDetail();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
     return;
@@ -3498,6 +3531,7 @@ document.addEventListener("click", (event) => {
     state.jobView = "radar";
     saveState();
     render();
+    showMobileRadarDetail();
     return;
   }
 
@@ -4345,11 +4379,22 @@ function updateRadarResults() {
   if (detailTitle) detailTitle.textContent = selected?.company || "未选择";
   const count = document.querySelector("#radar-result-count");
   if (count) count.textContent = `共 ${groups.length} 家公司 · ${filtered.length} 个岗位`;
+  const baseJobs = visibleRadarJobs({ applyInbox: false });
+  const inboxStats = radarInboxStats(baseJobs);
+  const counts = { "全部岗位": baseJobs.length, "未看": inboxStats.unread, "已收藏": inboxStats.saved };
+  document.querySelectorAll("[data-inbox-filter]").forEach(button => {
+    button.classList.toggle("active", button.dataset.inboxFilter === state.jobFilters.inbox);
+    const value = button.querySelector("strong");
+    if (value) value.textContent = String(counts[button.dataset.inboxFilter] ?? 0);
+  });
+
   updateRadarActivityUi();
   saveState();
 }
 
 document.addEventListener("keydown", (event) => {
+  if (handleWorkspaceKeydown(event, document)) return;
+  if (event.key === "Escape" && radarMobileDetail && !state.modal) { closeMobileRadarDetail(); return; }
   if (event.key === "Escape" && state.modal) {
     state.modal = null;
     render();
@@ -4370,6 +4415,8 @@ async function applyCloudUser(user) {
   interviewAudioUrls.forEach(url => URL.revokeObjectURL(url));
   interviewAudioUrls = [];
   state = structuredClone(initialState);
+  radarMobileDetail = false;
+  expandedApplicationId = "";
   cloudUser = user;
   if (!user) {
     cloudSyncStatus = cloudConfigured ? "ready" : "local";
