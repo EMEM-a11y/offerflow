@@ -835,14 +835,6 @@ function renderHomeAgenda(reminders) {
     </div>`;
 }
 
-function primaryWorkspaceAction(reminders) {
-  if (reminders.length) return { ...reminders[0], cta: reminders[0].view === "pipeline" ? "查看进度" : reminders[0].view === "interview" ? "准备面试" : "查看岗位" };
-  const activeApplications = state.applications.filter(app => !app.archivedAt && !isClosedApplicationStatus(app.status));
-  if (!activeApplications.length) return { title: "记录第一条真实投递", meta: "从岗位库选择，或手动登记已经投递的岗位。", modal: "quick-add", cta: "记录投递" };
-  if (state.jdContext.keywords.length) return { title: "把目标岗位关键词写进简历证据", meta: `当前已提取 ${state.jdContext.keywords.length} 个关键词。`, view: "resume", cta: "优化简历" };
-  return { title: "检查正在推进的岗位", meta: `目前有 ${activeApplications.length} 条进行中的投递。`, view: "pipeline", cta: "查看进度" };
-}
-
 function workspaceActionAttribute(action) {
   if (action.applicationId) return `data-open-application="${action.applicationId}"`;
   if (action.interviewRecordId) return `data-open-interview="${action.interviewRecordId}"`;
@@ -1284,7 +1276,6 @@ function renderHome() {
     `);
   }
   const reminders = workspaceReminders();
-  const focus = primaryWorkspaceAction(reminders);
   const unarchivedApplications = state.applications.filter(app => !app.archivedAt);
   const practice = practiceStats();
   const radarJobIds = new Set(radarJobs.map(job => job.id));
@@ -1304,11 +1295,6 @@ function renderHome() {
       </div>
     </header>
     <div class="home-morale-row">${renderDailyEncouragement()}${renderWoodenFish()}</div>
-    <section class="home-next-action" aria-labelledby="home-next-action-title">
-      <span class="home-next-action-label">下一步</span>
-      <div><strong id="home-next-action-title">${escapeHtml(focus.title)}</strong><small>${escapeHtml(focus.meta)}</small></div>
-      <button class="btn primary" ${workspaceActionAttribute(focus)}>${focus.cta}</button>
-    </section>
     <section class="home-progress-overview panel" aria-labelledby="home-progress-title">
       <div class="home-section-head"><div><h2 id="home-progress-title">阶段分布</h2></div><button class="text-action" data-view="pipeline">查看全部</button></div>
       <div class="home-metrics">

@@ -188,12 +188,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 @keyframes wooden-fish-bounce { 0% { transform: scale(1) rotate(0); } 25% { transform: scale(.82, .88) rotate(-4deg); } 58% { transform: scale(1.1, 1.06) rotate(2deg); } 100% { transform: scale(1) rotate(0); } }
 @keyframes wooden-fish-mallet { 0% { transform: rotate(-25deg) translateY(0); } 24% { transform: rotate(-7deg) translate(-3px, 7px); } 55% { transform: rotate(-34deg) translateY(-2px); } 100% { transform: rotate(-25deg) translateY(0); } }
 @keyframes wooden-fish-merit { 0% { opacity: 0; transform: translateY(2px) scale(.92); } 28% { opacity: 1; transform: translateY(-8px) scale(1); } 100% { opacity: 0; transform: translateY(-23px) scale(1.03); } }
-.home-next-action { min-width: 0; min-height: 60px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; margin-top: 9px; padding: 9px 11px 9px 15px; border: 1px solid var(--line); border-radius: var(--radius-small); background: var(--panel); }
-.home-next-action-label { color: var(--accent-ink); font-size: var(--text-xs); font-weight: 700; white-space: nowrap; }
-.home-next-action > div { min-width: 0; display: flex; align-items: baseline; gap: 9px; }
-.home-next-action strong { display: block; overflow: hidden; color: var(--ink); font-size: var(--text-sm); text-overflow: ellipsis; white-space: nowrap; }
-.home-next-action small { overflow: hidden; color: var(--faint); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
-.home-next-action .btn { min-height: 32px; padding: 7px 11px; font-size: var(--text-xs); }
 .home-progress-overview { margin-top: 10px; overflow: hidden; }
 .home-main-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(310px, .85fr); gap: 10px; margin-top: 10px; }
 .home-agenda, .home-module-overview { min-height: 238px; overflow: hidden; }
@@ -1615,9 +1609,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   .daily-encouragement { grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; padding: 10px 12px; }
   .daily-encouragement-meta { display: none; }
   .home-wooden-fish { width: 100%; min-height: 42px; }
-  .home-next-action { grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; padding-left: 12px; }
-  .home-next-action > div { display: block; }
-  .home-next-action small { display: none; }
   .home-agenda-row { grid-template-columns: 26px 60px minmax(0, 1fr); gap: 6px; padding-inline: 6px; }
   .home-metrics { grid-template-columns: repeat(3, 1fr); gap: 12px 0; }
   .home-metrics button:nth-child(4) { padding-left: 0; border-left: 0; }

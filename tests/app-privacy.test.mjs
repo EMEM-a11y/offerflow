@@ -35,6 +35,19 @@ function app(t, overrides = {}) {
   return { run:code=>vm.runInContext(code,context),writes };
 }
 
+test("home omits the next-action module while retaining progress and actionable reminders", async t => {
+  const { run } = app(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"job",company:"测试公司",role:"产品经理"}]; state.applications=[{id:"application",jobId:"job",status:"written",followUpAt:"2026-01-01",next:"完成笔试"}];');
+  const html = run("renderHome()");
+  assert.doesNotMatch(html, /home-next-action|下一步/);
+  assert.match(html, /阶段分布/);
+  assert.match(html, /模块进展/);
+  assert.match(html, /完成笔试/);
+  assert.match(html, /data-reminder-key=/);
+  assert.match(html, /data-open-application="application"/);
+});
+
 test("agenda completion survives cloud round trip, leaves progress intact and can be undone", async t => {
   const handlers = {};
   const { run, writes } = app(t, { document: { addEventListener: (type, handler) => { handlers[type] = handler; }, querySelector: () => null } });
@@ -49,7 +62,7 @@ test("agenda completion survives cloud round trip, leaves progress intact and ca
   assert.equal(run("workspaceReminders().length"), 0);
   assert.equal(run("JSON.stringify(state.applications)"), run("originalApplications"));
   assert.doesNotMatch(run("renderHomeAgenda(workspaceReminders())"), /件逾期/);
-  assert.doesNotMatch(run("primaryWorkspaceAction(workspaceReminders()).title"), /完成笔试/);
+  assert.doesNotMatch(run("renderHomeAgenda(workspaceReminders())"), /完成笔试/);
   await run("workspaceSync.flush()");
   const saved = writes.at(-1)[1];
   assert.equal(Object.keys(saved.reminderCompletions).length, 1);
