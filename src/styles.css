@@ -1877,3 +1877,42 @@ textarea { resize: vertical; }
   .home-section-head > button { flex-shrink: 0; white-space: nowrap; }
   .practice-tabs, .resume-tabs { gap: 8px 16px; }
 }
+
+/* Application records: list-first workspace, direct detail editing. */
+.pipeline-heading { margin-bottom: 18px; gap: 16px; }
+.pipeline-heading h1 { font-size: 24px; line-height: 1.3; letter-spacing: -.025em; }
+.pipeline-heading p { margin-top: 6px; font-size: var(--text-sm); }
+.pipeline-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; }
+.pipeline-controls .pipeline-scope-tabs { margin: 0; flex-shrink: 0; }
+.pipeline-controls .pipeline-toolbar { flex: 1; grid-template-columns: minmax(180px,1fr) auto; max-width: 560px; margin: 0; min-width: 280px; }
+.pipeline-filter-menu summary { min-height: 44px; }
+.pipeline-list-meta { margin: 10px 0; color: var(--muted); font-size: var(--text-xs); }
+.pipeline-table-wrap { max-height: calc(100dvh - 258px); min-height: 320px; box-shadow: none; border-radius: 12px; }
+.pipeline-table td { padding-block: 10px; }
+.record-edit-target { display: block; border: 0; padding: 6px 0; background: transparent; color: var(--ink); font-size: var(--text-base); line-height: 1.5; text-align: left; cursor: pointer; border-radius: 5px; }
+.record-edit-target:hover { color: var(--accent-ink); }
+.record-edit-target:hover .table-role, .record-company:hover { text-decoration: underline; text-underline-offset: 4px; }
+.record-edit-target:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.record-company { font-weight: 650; overflow-wrap: anywhere; }
+.record-position { width: 244px; max-width: 100%; }
+.record-position .table-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record-position .table-job-location { font-weight: 400; color: var(--muted); margin-top: 2px; }
+.pipeline-table td:nth-child(2), .pipeline-table th:nth-child(2) { box-shadow: 1px 0 0 var(--line); }
+@media (max-width: 760px) {
+  .pipeline-heading { gap: 12px; margin-bottom: 16px; }
+  .pipeline-heading .heading-actions { width: 100%; }
+  .pipeline-controls { gap: 10px; }
+  .pipeline-controls .pipeline-toolbar { min-width: 0; max-width: none; width: 100%; flex-basis: 100%; grid-template-columns: minmax(0,1fr) auto; }
+  .pipeline-table-wrap { max-height: none; min-height: 0; }
+  .pipeline-table td { padding: 0; }
+  .pipeline-table td:nth-child(2) { box-shadow: none; }
+  .record-position { width: 100%; }
+  .record-position .table-role { white-space: normal; }
+  .pipeline-table tbody tr[hidden] { display: none; }
+}
+
+@media (min-width: 761px) {
+  .pipeline-table th:last-child { width: 190px; }
+  .pipeline-table .table-row-actions { flex-wrap: nowrap; }
+  .pipeline-table .table-row-actions button { white-space: nowrap; }
+}

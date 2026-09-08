@@ -2477,24 +2477,14 @@ function renderPipeline() {
     .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   const companyOptions = [...new Set(state.applications.map(app => state.jobs.find(job => job.id === app.jobId)?.company).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
   const activeFilterCount = [filters.company !== "全部公司", filters.status !== "全部进度", filters.processResult !== "全部环节状态"].filter(Boolean).length;
-  const active = state.applications.filter(app => !app.archivedAt && !isClosedApplicationStatus(app.status)).length;
   const unarchivedCount = state.applications.filter(app => !app.archivedAt).length;
-  const assessmentCount = state.applications.filter(app => !app.archivedAt && ["assessment", "written"].includes(app.status)).length;
-  const interviewCount = state.applications.filter(app => !app.archivedAt && INTERVIEW_STAGES.includes(app.status)).length;
-  const failedCount = state.applications.filter(app => !app.archivedAt && REJECTION_STAGES.includes(app.status)).length;
   const archivedCount = state.applications.filter(app => app.archivedAt).length;
   return viewWrap("pipeline", `
     <div class="page-heading pipeline-heading">
-      <div><h1>我的投递进度</h1><p>集中查看每份投递的当前阶段、下一步与最终结果。</p></div>
+      <div><h1>投递记录</h1><p>点击公司或岗位名称编辑详情，阶段与日期可直接修改。</p></div>
       <div class="heading-actions"><button class="btn" data-action="export-applications">导出投递表</button><button class="btn primary" data-modal="quick-add">记录投递</button></div>
     </div>
-    <div class="pipeline-metrics">
-      <div><span>全部投递</span><strong>${state.applications.length}</strong></div>
-      <div><span>正在推进</span><strong>${active}</strong></div>
-      <div><span>测评 / 笔试</span><strong>${assessmentCount}</strong></div>
-      <div><span>面试阶段</span><strong>${interviewCount}</strong></div>
-      <div><span>未通过</span><strong>${failedCount}</strong></div>
-    </div>
+    <div class="pipeline-controls">
     <div class="pipeline-scope-tabs" aria-label="投递记录范围">
       <button class="${filters.scope === "active" ? "active" : ""}" data-pipeline-scope="active">未归档 ${unarchivedCount}</button>
       <button class="${filters.scope === "archived" ? "active" : ""}" data-pipeline-scope="archived">已归档 ${archivedCount}</button>
@@ -2511,8 +2501,9 @@ function renderPipeline() {
           ${activeFilterCount ? `<button data-action="clear-pipeline-filters">清除筛选</button>` : ""}
         </div>
       </details>
-      <span id="pipeline-result-count">显示 ${rows.length} 条 · 修改后自动保存</span>
     </div>
+    </div>
+    <div class="pipeline-list-meta"><span id="pipeline-result-count">显示 ${rows.length} 条 · 修改后自动保存</span></div>
     <div class="panel pipeline-table-wrap">
       <table class="pipeline-table">
         <thead><tr><th>公司</th><th>岗位</th><th>当前阶段</th><th>环节状态</th><th>投递日期</th><th>查看状态</th><th>提醒日期</th><th>下一步</th><th>笔面记录</th><th>更新时间</th><th></th></tr></thead>
@@ -2523,8 +2514,8 @@ function renderPipeline() {
           const radarLinked = radarJobs.some(item => item.id === job.id);
           const radarCompanyMatch = radarJobs.find(item => companyKeysMatch(item.company, job.company));
           return `<tr data-application-row="${app.id}">
-            <td><div class="table-company"><strong>${escapeHtml(job.company)}</strong><span class="sync-mini ${app.syncStatus || "local_only"}">${app.syncStatus === "imported" ? "飞书已导入" : app.feishuRecordId ? "飞书已关联"  : "工作台记录"}</span></div></td>
-            <td><div class="table-job-heading"><strong class="table-role" title="${escapeHtml(job.role)}">${escapeHtml(job.role)}</strong><button class="table-link-button table-job-edit" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息">编辑</button></div><span class="table-sub table-job-location" title="${escapeHtml(job.location || "地点待确认")}">${escapeHtml(job.location || "地点待确认")}</span></td>
+            <td><div class="table-company"><button class="record-edit-target record-company" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息" title="点击编辑投递信息">${escapeHtml(job.company)}</button></div></td>
+            <td><button class="record-edit-target record-position" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的岗位与地点" title="${escapeHtml(job.role)} · 点击编辑"><strong class="table-role">${escapeHtml(job.role)}</strong><span class="table-sub table-job-location">${escapeHtml(job.location || "地点待确认")}</span></button></td>
             <td><select class="table-select stage-${app.status}" data-app-status="${app.id}" aria-label="${escapeHtml(job.company)}当前进度">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}" ${app.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td>
             <td>${renderProcessStateCell(app, interview, job)}</td>
             <td><input class="table-input date" type="date" value="${escapeHtml(app.appliedAt || "")}" data-app-field="appliedAt" data-app-id="${app.id}" aria-label="${escapeHtml(job.company)}投递日期"></td>
