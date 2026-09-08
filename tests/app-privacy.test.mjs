@@ -45,6 +45,11 @@ test("pipeline separates company and role and exposes progress links without exp
   assert.equal((mainRow.match(/<td\b/g) || []).length, 7);
   assert.match(mainRow, /href="https:\/\/join.qq.com\/"/);
   assert.match(mainRow, /查询状态 ↗/);
+  assert.match(mainRow, /data-label="提醒日期"/);
+  assert.match(mainRow, /type="date"[^>]*data-app-field="followUpAt"/);
+  assert.doesNotMatch(mainRow, /data-app-field="next"/);
+  assert.match(html, /<span>下一步<\/span><input[^>]*data-app-field="next"/);
+  assert.equal((html.match(/data-app-field="followUpAt"/g) || []).length, 1);
   assert.match(html, /colspan="7"/);
   run('state.applications[0].progressUrl="javascript:alert(1)";');
   assert.doesNotMatch(run("renderPipeline()"), /href="javascript:/);
