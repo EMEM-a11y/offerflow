@@ -1658,6 +1658,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   .document-actions .btn { flex: 1; }
 }
 
+@media (min-width: 1201px) and (min-height: 700px) {
+  .content.home-content { min-height: calc(100dvh - 66px); display: flex; }
+  .home-content .view[data-view-panel="home"].active { flex: 1; display: flex; flex-direction: column; }
+  .home-content .home-main-grid { flex: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

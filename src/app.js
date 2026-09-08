@@ -1171,7 +1171,7 @@ function render() {
             ${activeViewLocked ? `<span class="privacy-status">登录后可用</span>` : ""}
           </div>
         </header>
-        <div class="content">
+        <div class="content ${state.activeView === "home" ? "home-content" : ""}">
           ${renderHome()}
           ${renderPractice()}
           ${renderJobs()}
