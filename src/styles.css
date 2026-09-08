@@ -1913,6 +1913,7 @@ textarea { resize: vertical; }
 
 @media (min-width: 761px) {
   .pipeline-table th:last-child { width: 190px; }
+  .pipeline-table .table-select { min-width: 180px; }
   .pipeline-table .table-row-actions { flex-wrap: nowrap; }
   .pipeline-table .table-row-actions button { white-space: nowrap; }
 }
