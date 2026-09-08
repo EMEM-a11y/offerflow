@@ -1594,7 +1594,7 @@ function renderJobs() {
   return viewWrap("jobs", `
     <div class="page-heading jobs-heading">
       <div><h1>${pageTitle}</h1></div>
-      ${activeTab !== "radar" ? "" : `<div class="heading-actions"><button class="btn" data-action="refresh-radar" ${radarLoading ? "disabled" : ""}>${radarLoading ? "正在检查…" : "检查新增"}</button><button class="btn primary" data-modal="quick-add">手动添加</button></div>`}
+      ${activeTab !== "radar" ? "" : `<div class="heading-actions"><button class="btn" data-action="refresh-radar" ${radarLoading ? "disabled" : ""}>${radarLoading ? "正在检查…" : "检查新增"}</button><button class="btn" data-modal="job-refresh-info" title="前往 GitHub 手动运行岗位抓取">手动更新</button><button class="btn primary" data-modal="quick-add">手动添加</button></div>`}
     </div>
     <div class="practice-tabs job-tabs jobs-section-tabs" role="tablist" aria-label="岗位模块">
       ${[["radar", "岗位雷达"], ["rules", "投递规则"], ["companies", "岗位诊断"], ["sources", "数据来源"]].map(([id, label]) => `<button class="practice-tab ${activeTab === id ? "active" : ""}" data-job-tab="${id}" role="tab">${label}${id === "companies" && state.companyReviewQueue.length ? ` ${state.companyReviewQueue.length}` : ""}</button>`).join("")}
@@ -2762,13 +2762,14 @@ function renderModal() {
   if (!state.modal) return "";
   if (!hasPrivateAccess() && !["account", "privacy", "mailbox", "job-refresh-info"].includes(state.modal)) state.modal = "account";
   if (state.modal === "job-refresh-info") {
-    return modalShell("管理员抓取", `
+    return modalShell("手动更新岗位", `
       <div class="account-setup">
         <span class="account-mark" aria-hidden="true">管</span>
         <h3>仅仓库管理员可以运行</h3>
-        <p>没有 OfferFlow 仓库写入权限的用户无法触发抓取，也不会修改岗位数据。</p>
+        <p>此入口会打开 GitHub 的岗位抓取任务，不会在打开时自动启动。没有 OfferFlow 仓库写入权限的用户无法触发抓取。</p>
+        <ol class="refresh-instructions"><li>登录有仓库写入权限的 GitHub 账号。</li><li>点击 Run workflow，选择 main 分支，再确认运行。</li><li>等待抓取和网站发布完成，回到岗位雷达点击“检查新增”。</li></ol>
         <div class="account-callout"><strong>普通用户无需操作</strong><span>岗位每天会自动更新两次，回到岗位页点击“检查新增”即可查看。</span></div>
-        <div class="form-actions"><button class="btn" data-action="close-modal">返回工作台</button><a class="btn primary" href="${JOB_REFRESH_WORKFLOW_URL}" target="_blank" rel="noopener noreferrer">我是管理员，继续 ↗</a></div>
+        <div class="form-actions"><button class="btn" data-action="close-modal">返回工作台</button><a class="btn primary" href="${JOB_REFRESH_WORKFLOW_URL}" target="_blank" rel="noopener noreferrer">打开 GitHub 更新任务 ↗</a></div>
       </div>
     `);
   }

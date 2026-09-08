@@ -87,7 +87,11 @@ test("manual job refresh opens the repository workflow over HTTPS", () => {
   assert.equal(url.hostname, "github.com");
   assert.equal(url.pathname, "/EMEM-a11y/offerflow/actions/workflows/update-official-jobs.yml");
   const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(appSource, /data-modal="job-refresh-info"/);
+  const radarHeading = appSource.slice(appSource.indexOf("function renderJobs()"), appSource.indexOf("function applicationRuleMatches"));
+  assert.match(radarHeading, /data-modal="job-refresh-info"[^>]*>手动更新/);
+  assert.match(radarHeading, /data-action="refresh-radar"/);
+  assert.match(appSource, /不会在打开时自动启动/);
+  assert.match(appSource, /Run workflow/);
   assert.match(appSource, /仅仓库管理员可以运行/);
   assert.match(appSource, /普通用户无需操作/);
 });
