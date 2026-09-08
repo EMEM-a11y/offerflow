@@ -1,5 +1,7 @@
 import { assetUrl } from "./asset-url.js";
 
+export const JOB_REFRESH_WORKFLOW_URL = "https://github.com/EMEM-a11y/offerflow/actions/workflows/update-official-jobs.yml";
+
 export const JOB_SOURCES = [
   {
     id: "official-live",

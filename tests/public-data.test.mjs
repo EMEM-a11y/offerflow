@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { SEED_QUESTIONS, PRACTICE_PAPERS, validateImportedQuestions } from "../src/question-bank.js";
-import { validateRadarJobLinks } from "../src/job-radar.js";
+import { JOB_REFRESH_WORKFLOW_URL, validateRadarJobLinks } from "../src/job-radar.js";
 import { prepareSnapshot } from "../scripts/update-jobs.mjs";
 
 test("public question IDs, answers, stems and local images are complete", () => {
@@ -57,4 +57,11 @@ test("updater rejects empty, changed and unexpectedly shrunken sources", () => {
   const rows=Array.from({length:20},(_,i)=>({company:`公司${i}`,positions:["产品"]}));
   assert.throws(()=>prepareSnapshot(rows,100));
   assert.equal(prepareSnapshot(rows).jobs.length,20);
+});
+
+test("manual job refresh opens the repository workflow over HTTPS", () => {
+  const url = new URL(JOB_REFRESH_WORKFLOW_URL);
+  assert.equal(url.protocol, "https:");
+  assert.equal(url.hostname, "github.com");
+  assert.equal(url.pathname, "/EMEM-a11y/offerflow/actions/workflows/update-official-jobs.yml");
 });

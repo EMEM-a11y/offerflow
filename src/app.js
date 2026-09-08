@@ -1,6 +1,6 @@
 import { PRACTICE_CATEGORIES, PRACTICE_PAPERS, SEED_QUESTIONS, categoryById, validateImportedQuestions } from "./question-bank.js";
 import { COMMUNITY_BANK_SOURCE, createCommunityPaper, loadCommunityQuestionBank } from "./community-question-bank.js";
-import { FALLBACK_RADAR_JOBS, INDUSTRY_GROUPS, JOB_SOURCES, loadRadarJobs } from "./job-radar.js";
+import { FALLBACK_RADAR_JOBS, INDUSTRY_GROUPS, JOB_REFRESH_WORKFLOW_URL, JOB_SOURCES, loadRadarJobs } from "./job-radar.js";
 import { APPLICATION_RULES, APPLICATION_RULES_UPDATED_AT } from "./application-rules.js";
 import { cloudConfigured, captchaSiteKey, currentCloudUser, loadCloudWorkspace, saveCloudWorkspace, sendLoginLink, signOutCloud, watchCloudAuth } from "./cloud.js";
 import { WorkspaceSync } from "./workspace-sync.js";
@@ -1595,7 +1595,7 @@ function renderJobs() {
   return viewWrap("jobs", `
     <div class="page-heading jobs-heading">
       <div><h1>${isRulesView ? "大厂投递规则" : "岗位搜索与分析"}</h1><p>${isRulesView ? "比较不同公司的投递次数、并行限制和失败后的再次投递规则。" : "先筛选公司和岗位，再在同一页面核对招聘信息、开放方向和投递入口。"}</p></div>
-      ${isRulesView ? "" : `<div class="heading-actions"><button class="btn" data-action="refresh-radar" ${radarLoading ? "disabled" : ""}>${radarLoading ? "正在检查…" : "检查新增"}</button><button class="btn primary" data-modal="quick-add">手动添加</button></div>`}
+      ${isRulesView ? "" : `<div class="heading-actions"><a class="btn" href="${JOB_REFRESH_WORKFLOW_URL}" target="_blank" rel="noopener noreferrer" title="打开 GitHub 后点击 Run workflow">触发抓取 ↗</a><button class="btn" data-action="refresh-radar" ${radarLoading ? "disabled" : ""}>${radarLoading ? "正在检查…" : "检查新增"}</button><button class="btn primary" data-modal="quick-add">手动添加</button></div>`}
     </div>
     <div class="practice-tabs job-tabs jobs-section-tabs" role="tablist" aria-label="岗位模块">
       ${[["radar", "岗位雷达"], ["rules", "投递规则"], ["companies", "岗位诊断"], ["sources", "数据来源"]].map(([id, label]) => `<button class="practice-tab ${activeTab === id ? "active" : ""}" data-job-tab="${id}" role="tab">${label}${id === "companies" && state.companyReviewQueue.length ? ` ${state.companyReviewQueue.length}` : ""}</button>`).join("")}
