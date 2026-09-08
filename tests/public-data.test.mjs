@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { SEED_QUESTIONS, PRACTICE_PAPERS, validateImportedQuestions } from "../src/question-bank.js";
 import { JOB_REFRESH_WORKFLOW_URL, validateRadarJobLinks } from "../src/job-radar.js";
 import { prepareSnapshot } from "../scripts/update-jobs.mjs";
@@ -64,4 +64,8 @@ test("manual job refresh opens the repository workflow over HTTPS", () => {
   assert.equal(url.protocol, "https:");
   assert.equal(url.hostname, "github.com");
   assert.equal(url.pathname, "/EMEM-a11y/offerflow/actions/workflows/update-official-jobs.yml");
+  const appSource = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(appSource, /data-modal="job-refresh-info"/);
+  assert.match(appSource, /仅仓库管理员可以运行/);
+  assert.match(appSource, /普通用户无需操作/);
 });

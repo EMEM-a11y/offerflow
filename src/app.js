@@ -663,7 +663,7 @@ function availablePracticePapers() {
 }
 
 function cloudStatusLabel() {
-  if (!cloudConfigured) return "云同步未配置";
+  if (!cloudConfigured) return "本地模式";
   if (cloudSyncStatus === "checking") return "正在检查账号";
   if (cloudSyncStatus === "syncing") return "正在同步";
   if (cloudSyncStatus === "saving") return "正在保存";
@@ -820,12 +820,12 @@ function renderHomeAgenda(reminders) {
   const visible = showingCompleted ? completed : reminders;
   const overdue = reminders.filter(item => item.date && daysFromToday(item.date) < 0).length;
   return `
-    <div class="home-section-head"><div><h2>接下来 14 天</h2><p>${reminders.length} 件待办${overdue ? ` · ${overdue} 件逾期` : ""}</p></div><button class="text-action" data-view="pipeline">管理日期</button></div>
+    <div class="home-section-head"><div><h2>接下来 14 天</h2><p>${reminders.length} 件待办${overdue ? ` · ${overdue} 件逾期` : ""} · 含未处理的过期事项</p></div><button class="text-action" data-view="pipeline">管理日期</button></div>
     <div class="home-agenda-tabs" aria-label="待办筛选">
       <button data-agenda-view="pending" aria-pressed="${!showingCompleted}">待办 ${reminders.length}</button>
       <button data-agenda-view="completed" aria-pressed="${showingCompleted}">已完成 ${completed.length}</button>
     </div>
-    <p class="home-agenda-help">完成待办不改变笔面结果。</p>
+    <p class="home-agenda-help">勾选表示此事已处理；笔面结果请在投递记录中更新。</p>
     <div class="home-agenda-list">
       ${visible.map(reminder => `<div class="home-agenda-row ${showingCompleted ? "is-completed" : ""}">
         <label class="agenda-check"><input type="checkbox" data-reminder-key="${escapeHtml(reminder.key)}" ${showingCompleted ? "checked" : ""} aria-label="${showingCompleted ? "撤销完成" : "完成待办"}：${escapeHtml(reminder.title)}"></label>
@@ -1101,7 +1101,7 @@ function saveRadarJob(job) {
     });
   }
   state.selectedJob = job.id;
-  saveState("已添加投递记录");
+  saveState("已记录为已投递；飞书尚未连接");
   render();
   requestAnimationFrame(() => {
     const panel = document.querySelector(".radar-list-panel .job-list");
@@ -1175,7 +1175,7 @@ function updateLoginRequest() {
   feedback.textContent = loginRequest.state.message;
   feedback.classList.toggle("success", loginRequest.state.success);
   const captchaStatus = form.querySelector(".captcha-status");
-  if (captchaStatus) captchaStatus.textContent = loginCaptcha.state.message || "同意《数据与隐私说明》后加载安全验证。";
+  if (captchaStatus) captchaStatus.textContent = loginCaptcha.state.message || "勾选隐私说明后加载安全验证。";
   if (seconds) loginRequestTimer = setTimeout(updateLoginRequest, 1000);
 }
 
@@ -1214,10 +1214,10 @@ function renderPrivacyGate(view, label) {
           <div class="privacy-copy">
             <span>个人空间</span>
             <h1>登录后查看${label.replace("OfferFlow ", "")}</h1>
-            <p>使用邮箱登录后，可查看并同步个人求职记录。</p>
+            <p>背景仅展示页面结构，不包含任何真实求职数据。使用邮箱登录后，可查看和同步你的个人记录。</p>
           </div>
-          <button class="btn primary privacy-login" data-modal="account">${cloudConfigured ? "使用邮箱登录" : "查看服务状态"}</button>
-          <button class="text-action privacy-policy-link" data-modal="privacy">数据与隐私说明</button>
+          <button class="btn primary privacy-login" data-modal="account">${cloudConfigured ? "使用邮箱登录" : "查看云同步设置"}</button>
+          <button class="text-action privacy-policy-link" data-modal="privacy">数据保存在哪里？</button>
         </div>
       </div>
     </div>
@@ -1310,7 +1310,7 @@ function renderHome() {
       <button class="btn primary" ${workspaceActionAttribute(focus)}>${focus.cta}</button>
     </section>
     <section class="home-progress-overview panel" aria-labelledby="home-progress-title">
-      <div class="home-section-head"><div><h2 id="home-progress-title">阶段分布</h2></div><button class="text-action" data-view="pipeline">查看全部</button></div>
+      <div class="home-section-head"><div><h2 id="home-progress-title">阶段分布</h2><p>看看当前的投递都走到了哪一步</p></div><button class="text-action" data-view="pipeline">查看全部</button></div>
       <div class="home-metrics">
         <button data-home-stage="all"><strong>${unarchivedApplications.length}</strong><span>全部</span></button>
         <button data-home-stage="applied"><strong>${appCount("applied")}</strong><span>简历筛选</span></button>
@@ -1325,7 +1325,7 @@ function renderHome() {
         ${renderHomeAgenda(reminders)}
       </section>
       <section class="home-module-overview panel" aria-labelledby="home-module-title">
-        <div class="home-section-head"><div><h2 id="home-module-title">模块进展</h2></div></div>
+        <div class="home-section-head"><div><h2 id="home-module-title">模块进展</h2><p>点击一行直接继续处理</p></div></div>
         <div class="home-module-list">
           <button data-home-route="jobs"><span><strong>岗位雷达</strong><small>${newJobs ? `${newJobs} 个新增待查看` : "暂无新增岗位"}</small></span><em>${savedJobs} 个收藏</em></button>
           <button data-home-route="practice"><span><strong>北森职测</strong><small>${state.wrongQuestionIds.length ? `${state.wrongQuestionIds.length} 道错题待复习` : `${practice.sessions} 次训练已完成`}</small></span><em>${practice.accuracy}% 正确率</em></button>
@@ -1346,10 +1346,10 @@ function renderPractice() {
   const activeTab = !hasPrivateAccess() && ["wrongbook", "stats"].includes(requestedTab) ? "overview" : requestedTab;
   return viewWrap("practice", `
     <div class="page-heading practice-heading">
-      <div><h1>北森职测训练</h1><p>共 ${questionBank().length} 道可练题${communityBankStatus === "loading" ? "，社区题库正在载入" : ""}${hasPrivateAccess() ? "" : "；登录可保存错题与成绩"}。</p></div>
+      <div><h1>北森职测训练</h1><p>社区整理题库与已收录的企业测评资料供大家练习。当前 ${questionBank().length} 道可练题${communityBankStatus === "loading" ? "，社区题库正在载入" : ""}${hasPrivateAccess() ? "" : "；无需登录即可练习，登录后保存个人错题与成绩"}。</p></div>
       <div class="practice-import-actions">
         <label class="btn" for="question-import">添加我的题库</label>
-        <small>支持 JSON · <a href="${assetUrl("example-question-bank.json")}" download>下载模板</a> · 仅自己可见</small>
+        <small>选择 JSON 文件即可，或先<a href="${assetUrl("example-question-bank.json")}" download>下载填写模板</a>。导入题目仅保存到自己的账号。</small>
       </div>
       <input id="question-import" type="file" accept="application/json,.json" hidden>
     </div>
@@ -1366,9 +1366,9 @@ function renderPracticeOverview(stats) {
     <div class="practice-summary">
       <div class="practice-summary-main">
         <span class="practice-kicker">今日建议</span>
-        <h2>${weakest ? `优先练习${weakest.name}` : "先测一测当前水平"}</h2>
-        <p>${weakest ? `这是目前的薄弱项，先练 5 道题。` : "完成混合练习，了解薄弱题型。"}</p>
-        <button class="btn primary" data-start-category="${weakest?.id || "mixed"}">${weakest ? "开始专项" : "开始测试"}</button>
+        <h2>${weakest ? `优先练习${weakest.name}` : "先完成一次能力基线"}</h2>
+        <p>${weakest ? `你在这个维度的历史正确率相对较低，建议用 5 道题做一轮短训练。` : "完成一套混合模拟卷后，系统会按正确率和耗时推荐薄弱项。"}</p>
+        <button class="btn primary" data-start-category="${weakest?.id || "mixed"}">${weakest ? "开始专项" : "开始基线测试"}</button>
       </div>
       <div class="practice-summary-stats">
         <div><strong>${stats.accuracy}%</strong><span>历史正确率</span></div>
@@ -1377,7 +1377,7 @@ function renderPracticeOverview(stats) {
       </div>
     </div>
     <section class="practice-section">
-      <div class="practice-section-head"><div><h2>专项训练</h2></div></div>
+      <div class="practice-section-head"><div><h2>专项训练</h2><p>先把一个能力维度练稳定，再进入整套模拟。</p></div></div>
       <div class="category-grid">
         ${PRACTICE_CATEGORIES.map(category => {
           const categoryStats = statsForCategory(category.id);
@@ -1401,11 +1401,11 @@ function renderPracticeOverview(stats) {
 function renderPaperLibrary() {
   return `
     <section class="practice-section no-top-gap">
-      <div class="practice-section-head"><div><h2>北森题库与我的资料</h2><p>按题源选择套卷。</p></div></div>
+      <div class="practice-section-head"><div><h2>北森题库与我的资料</h2><p>社区北森题库是主训练池；官方样题和你提供的企业真题单独标注，不再混入自生成题。</p></div></div>
       ${communityBankStatus === "loading" ? `<div class="bank-loading"><span></span><div><strong>正在载入并检查社区北森题库</strong><p>只会放入题干、图表、选项和答案完整的题目。</p></div></div>` : ""}
       ${communityBankStatus === "error" ? `<div class="bank-loading error"><div><strong>社区题库暂时载入失败</strong><p>你的本地题库仍可使用，刷新页面可重新尝试。</p></div></div>` : ""}
       <div class="paper-list">${availablePracticePapers().map(renderPaperCard).join("")}</div>
-      <div class="source-note"><strong>题源说明</strong><p>社区整理，非北森官方。<a href="${COMMUNITY_BANK_SOURCE.repositoryUrl}" target="_blank" rel="noopener noreferrer">社区题源</a> · <a href="https://www.beisen.com/res/399.html" target="_blank" rel="noopener noreferrer">官方样题</a></p><details class="copy-help"><summary>题库整理说明</summary><p>社区作者说明其题库基于 353 页北森测评资料整理。收录时剔除缺图、缺选项、答案异常及解析串题的数据，并保留出处。</p></details></div>
+      <div class="source-note"><strong>题源说明</strong><p>主训练池来自<a href="${COMMUNITY_BANK_SOURCE.repositoryUrl}" target="_blank" rel="noopener noreferrer">minnielv/beisen-quiz</a>，题库作者说明其基于一份 353 页北森测评资料整理。系统会先剔除缺图、缺选项、答案异常和串入上一题解析的数据；保留出处，并明确标注为社区整理、非北森官方。另可到<a href="https://www.beisen.com/res/399.html" target="_blank" rel="noopener noreferrer">北森官网样题页</a>核对公开题型。</p></div>
     </section>
   `;
 }
@@ -1445,7 +1445,7 @@ function renderWrongBook() {
   return `
     <section class="practice-section no-top-gap">
       <div class="practice-section-head"><div><h2>错题本</h2><p>错题会自动收录。重练答对后仍保留历史记录。</p></div>${questions.length ? `<button class="btn primary" data-start-wrongbook>重练全部</button>` : ""}</div>
-      ${questions.length ? `<div class="wrong-list">${questions.map(question => `<article class="wrong-card"><div><span class="tag warning">${categoryById(question.category)?.name || "未分类"}</span><h3>${escapeHtml(question.prompt.slice(0, 42))}${question.prompt.length > 42 ? "…" : ""}</h3><p>${escapeHtml(question.source)}</p></div><div class="wrong-card-actions"><button class="btn small ghost" data-master-wrong="${question.id}">已掌握，移除</button><button class="btn small" data-start-single="${question.id}">再做一次</button></div></article>`).join("")}</div>` : `<div class="large-empty"><strong>还没有错题</strong><p>完成一组训练后，答错的题会自动出现在这里。</p><button class="btn primary" data-start-category="mixed">开始测试</button></div>`}
+      ${questions.length ? `<div class="wrong-list">${questions.map(question => `<article class="wrong-card"><div><span class="tag warning">${categoryById(question.category)?.name || "未分类"}</span><h3>${escapeHtml(question.prompt.slice(0, 42))}${question.prompt.length > 42 ? "…" : ""}</h3><p>${escapeHtml(question.source)}</p></div><div class="wrong-card-actions"><button class="btn small ghost" data-master-wrong="${question.id}">已掌握，移除</button><button class="btn small" data-start-single="${question.id}">再做一次</button></div></article>`).join("")}</div>` : `<div class="large-empty"><strong>还没有错题</strong><p>完成一组训练后，答错的题会自动出现在这里。</p><button class="btn primary" data-start-category="mixed">开始基线测试</button></div>`}
     </section>
   `;
 }
@@ -1594,8 +1594,8 @@ function renderJobs() {
   const isRulesView = activeTab === "rules";
   return viewWrap("jobs", `
     <div class="page-heading jobs-heading">
-      <div><h1>${isRulesView ? "大厂投递规则" : "岗位雷达"}</h1>${isRulesView ? "<p>查看投递次数、并行、改岗与重投限制。</p>" : ""}</div>
-      ${isRulesView ? "" : `<div class="heading-actions"><a class="btn" href="${JOB_REFRESH_WORKFLOW_URL}" target="_blank" rel="noopener noreferrer" title="打开 GitHub 后点击 Run workflow">触发抓取 ↗</a><button class="btn" data-action="refresh-radar" ${radarLoading ? "disabled" : ""}>${radarLoading ? "正在检查…" : "检查新增"}</button><button class="btn primary" data-modal="quick-add">手动添加</button></div>`}
+      <div><h1>${isRulesView ? "大厂投递规则" : "岗位搜索与分析"}</h1><p>${isRulesView ? "比较不同公司的投递次数、并行限制和失败后的再次投递规则。" : "先筛选公司和岗位，再在同一页面核对招聘信息、开放方向和投递入口。"}</p></div>
+      ${isRulesView ? "" : `<div class="heading-actions"><button class="btn" data-modal="job-refresh-info">管理员抓取</button><button class="btn" data-action="refresh-radar" ${radarLoading ? "disabled" : ""}>${radarLoading ? "正在检查…" : "检查新增"}</button><button class="btn primary" data-modal="quick-add">手动添加</button></div>`}
     </div>
     <div class="practice-tabs job-tabs jobs-section-tabs" role="tablist" aria-label="岗位模块">
       ${[["radar", "岗位雷达"], ["rules", "投递规则"], ["companies", "岗位诊断"], ["sources", "数据来源"]].map(([id, label]) => `<button class="practice-tab ${activeTab === id ? "active" : ""}" data-job-tab="${id}" role="tab">${label}${id === "companies" && state.companyReviewQueue.length ? ` ${state.companyReviewQueue.length}` : ""}</button>`).join("")}
@@ -1620,7 +1620,7 @@ function renderApplicationRules() {
         <label for="application-rule-search"><span>搜索公司</span><input class="search" id="application-rule-search" type="search" value="${escapeHtml(filters.query)}" placeholder="例如：腾讯、小米或 ByteDance" autocomplete="off"></label>
         <div class="application-rule-library-meta"><strong>规则库 ${APPLICATION_RULES.length} 家</strong><span>${officialCount} 家官网已明确</span></div>
       </div>
-      <div class="application-rule-result-meta"><span id="application-rule-result-count" aria-live="polite">找到 ${visibleCount} 家公司</span><span>更新 ${APPLICATION_RULES_UPDATED_AT} · 各公司核验日期见卡片</span></div>
+      <div class="application-rule-result-meta"><span id="application-rule-result-count" aria-live="polite">找到 ${visibleCount} 家公司</span><span>规则库更新于 ${APPLICATION_RULES_UPDATED_AT}（非全部重新核验）</span></div>
     </section>
     <div class="application-rule-grid">
       ${APPLICATION_RULES.map(rule => `<article class="application-rule-card panel" data-rule-card data-rule-search="${escapeHtml([rule.company, ...(rule.aliases || []), rule.cohort, rule.signal, rule.quota].join(" ").toLowerCase())}" ${applicationRuleMatches(rule, filters) ? "" : "hidden"}>
@@ -1631,15 +1631,15 @@ function renderApplicationRules() {
         <div class="rule-quota"><span>核心限制</span><strong>${escapeHtml(rule.quota)}</strong></div>
         <dl>
           <div><dt>能否并行</dt><dd>${escapeHtml(rule.parallel)}</dd></div>
-          <div><dt>未通过后</dt><dd>${escapeHtml(rule.retry)}</dd></div>
+          <div><dt>失败以后</dt><dd>${escapeHtml(rule.retry)}</dd></div>
           <div><dt>修改岗位</dt><dd>${escapeHtml(rule.change)}</dd></div>
         </dl>
-        <details class="rule-advice copy-help"><summary>投递建议</summary><p>${escapeHtml(rule.advice)}</p></details>
+        <p class="rule-advice"><strong>怎么用</strong>${escapeHtml(rule.advice)}</p>
         <footer><span class="rule-evidence ${rule.evidence}">${escapeHtml(rule.evidenceLabel)}</span><div>${rule.sources.map(source => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.label)}</a>`).join("")}</div></footer>
       </article>`).join("")}
     </div>
     <div class="large-empty application-rule-empty" id="application-rule-empty" ${visibleCount ? "hidden" : ""}><strong>暂时没有找到这家公司</strong><p>可以换一个公司名称，或清空搜索框查看全部规则。</p></div>
-    <p class="application-rule-note">投递前以招聘官网为准；“未明确”不代表没有限制。</p>
+    <p class="application-rule-note">投递前请再打开对应招聘官网确认一次。页面显示的是公开规则摘要，不替代企业个人中心里的实时提示。</p>
   `;
 }
 
@@ -1779,7 +1779,7 @@ function renderRadarContinuation() {
   const activity = state.radarActivity;
   const lastJob = radarJobs.find(job => job.id === activity.lastViewedJobId);
   return `<div class="radar-continuation">
-    <div><span>继续浏览</span>${lastJob ? `<strong>上次看到 ${escapeHtml(lastJob.company)} · ${escapeHtml(lastJob.program || lastJob.role)}</strong><small>${escapeHtml(formatActivityMoment(activity.lastViewedAt))}</small>` : `<strong>还没有浏览记录</strong><small>打开岗位后自动保留浏览位置</small>`}</div>
+    <div><span>浏览接力</span>${lastJob ? `<strong>上次看到 ${escapeHtml(lastJob.company)} · ${escapeHtml(lastJob.program || lastJob.role)}</strong><small>${escapeHtml(formatActivityMoment(activity.lastViewedAt))}</small>` : `<strong>还没有浏览记录</strong><small>点开一条岗位后，这里会记住你的进度</small>`}</div>
     ${lastJob ? `<button class="btn" data-action="continue-radar">继续上次</button>` : ""}
   </div>`;
 }
@@ -1954,12 +1954,12 @@ function renderRadarDetail(job) {
     </div>
     <div class="detail-facts"><div><span>工作地点</span><strong>${displayJobText(job.location)}</strong></div><div><span>截止时间</span><strong>${displayJobText(job.deadline)}</strong></div><div><span>信息来源</span><strong>${job.confirmedBy > 1 ? `${job.confirmedBy} 个来源` : "1 个来源"}</strong></div></div>
     <section class="preference-match">
-      <div class="section-heading-line"><h3>与你的偏好</h3></div>
+      <div class="section-heading-line"><h3>与你的偏好</h3><span>只说明已知信息，不是匹配分</span></div>
       <div class="preference-signals">${fit.signals.slice(0, 3).map(item => `<div class="${item.met ? "met" : "unknown"}"><strong>${item.met ? "符合" : "待核对"}</strong><span>${displayJobText(item.label)}</span></div>`).join("")}</div>
     </section>
-    <section class="job-detail-section"><div class="section-heading-line"><h3>开放方向</h3><span>${job.positions.length || 1} 项</span></div><div class="opening-list">${preferredRoles(job).map(role => `<div><span><strong>${displayJobText(role)}</strong>${radarRoleTerms().some(term => role.includes(term)) ? "<small>符合目标方向</small>" : ""}</span>${link ? `<a data-radar-open="${job.id}" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">查看</a>` : `<em>入口待补</em>`}</div>`).join("")}</div></section>
+    <section class="job-detail-section"><div class="section-heading-line"><h3>开放方向</h3><span>${job.positions.length || 1} 项</span></div><div class="opening-list">${preferredRoles(job).map(role => `<div><span><strong>${displayJobText(role)}</strong><small>${radarRoleTerms().some(term => role.includes(term)) ? "与你的目标方向相关" : "聚合源收录方向"}</small></span>${link ? `<a data-radar-open="${job.id}" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">查看</a>` : `<em>入口待补</em>`}</div>`).join("")}</div></section>
     <section class="jd-analysis-box ${analyzedJob ? "ready" : ""}">
-      <div><span>JD 分析</span><h3>${analyzedJob ? "JD 关键词" : "补充具体岗位 JD"}</h3><p>${analyzedJob ? `提取 ${keywords.length} 个关键词 · ${gaps.length} 项简历补充提示` : "粘贴具体岗位描述，提取关键词并查看简历待补项。"}</p></div>
+      <div><span>JD 分析</span><h3>${analyzedJob ? "已读取你粘贴的具体 JD" : "聚合页只有招聘方向，还不能准确判断"}</h3><p>${analyzedJob ? `已提取 ${keywords.length} 个关键词，并找到 ${gaps.length} 个需要补证据的方向。` : "打开企业招聘页，选择具体岗位后把 JD 粘贴回来，才能结合简历给出可靠建议。"}</p></div>
       ${analyzedJob ? `<div class="jd-analysis-tags">${keywords.map(item => `<span>${escapeHtml(item)}</span>`).join("")}</div><button class="btn primary" data-action="sync-jd" data-job-id="${job.id}">同步到简历优化</button>` : `<button class="btn primary" data-analyze-radar="${job.id}">粘贴具体 JD</button>`}
     </section>
     <div class="source-strip"><span>来源：${job.sourceNames.map(displayJobText).join(" + ")}</span><span>最近收录：${displayJobText(job.lastSeen || "来源更新日")}</span><span>链接校验：${escapeHtml(linkState.note)}</span>${application ? `<span class="linked-progress">投递进度：<strong>${escapeHtml(applicationStageLabel(application.status))}</strong></span>` : relatedApplications.length ? `<span class="linked-progress">关联状态：<strong>${escapeHtml(job.company)}已有 ${relatedApplications.length} 条投递记录</strong></span>` : ""}</div>
@@ -1980,16 +1980,16 @@ function renderCompanyMatches() {
     .map(item => ({ ...item, roles: companyDirections(item.jobs) }));
   const completedCount = companies.filter(item => state.companyDiagnoses[item.company]).length;
   return `
-    <div class="company-match-intro"><div><span class="practice-kicker">岗位诊断</span><h2>${companies.length ? `待记录 ${companies.length - completedCount} 家 · 已完成 ${completedCount} 家` : "选择需要分析的公司"}</h2><p>在助手对话中分析，将结论保存到这里。</p></div><button class="btn" data-job-tab="radar">继续浏览岗位</button></div>
+    <div class="company-match-intro"><div><span class="practice-kicker">岗位诊断</span><h2>${companies.length ? `待记录 ${companies.length - completedCount} 家 · 已完成 ${completedCount} 家` : "把需要判断的公司收进来"}</h2><p>这里不调用大模型。你可以在自己常用的 Codex 或其他模型中完成诊断，再把完整结论粘贴回来保存。</p></div><button class="btn" data-job-tab="radar">继续浏览岗位</button></div>
     ${companies.length ? `<div class="company-grid">
       ${companies.map(item => `<article class="company-card">
         <div class="company-card-top"><div><span>${escapeHtml(item.jobs[0].industry)}</span><h3>${escapeHtml(item.company)}</h3></div><strong class="review-state ${state.companyDiagnoses[item.company] ? "done" : ""}">${state.companyDiagnoses[item.company] ? "已记录" : "待诊断"}</strong></div>
         <div class="company-openings">当前收录 ${item.jobs.length} 个批次/岗位记录</div>
-        <ol>${item.roles.map(role => `<li><span><strong>${escapeHtml(role.role)}</strong></span>${safeExternalUrl(role.job.applyUrl) ? `<a href="${escapeHtml(role.job.applyUrl)}" target="_blank" rel="noopener noreferrer">打开入口 ↗</a>` : `<em>入口待补</em>`}</li>`).join("")}</ol>
-        ${state.companyDiagnoses[item.company] ? `<div class="diagnosis-summary"><strong>诊断结论</strong><p>${escapeHtml(state.companyDiagnoses[item.company].conclusion || "已保存诊断结果")}</p><small>更新于 ${escapeHtml(formatDiagnosisDate(state.companyDiagnoses[item.company].updatedAt))}</small></div>` : ``}
+        <ol>${item.roles.map(role => `<li><span><strong>${escapeHtml(role.role)}</strong><small>收录方向，不代表适配结论</small></span>${safeExternalUrl(role.job.applyUrl) ? `<a href="${escapeHtml(role.job.applyUrl)}" target="_blank" rel="noopener noreferrer">打开入口 ↗</a>` : `<em>入口待补</em>`}</li>`).join("")}</ol>
+        ${state.companyDiagnoses[item.company] ? `<div class="diagnosis-summary"><strong>诊断结论</strong><p>${escapeHtml(state.companyDiagnoses[item.company].conclusion || "已保存诊断结果")}</p><small>更新于 ${escapeHtml(formatDiagnosisDate(state.companyDiagnoses[item.company].updatedAt))}</small></div>` : `<div class="diagnosis-summary pending"><strong>等待手动记录</strong><p>在外部完成分析后，把完整结论粘贴回来。</p></div>`}
         <div class="company-card-actions"><button class="btn small" data-company-pick="${item.jobs[0].id}">查看岗位</button><button class="btn small primary" data-diagnose-company="${escapeHtml(item.company)}">${state.companyDiagnoses[item.company] ? "编辑诊断" : "填写诊断结果"}</button>${state.companyDiagnoses[item.company] ? "" : `<button class="btn small ghost" data-review-company="${escapeHtml(item.company)}">移出清单</button>`}</div>
       </article>`).join("")}
-    </div>` : `<div class="large-empty"><strong>还没有待诊断公司</strong><p>回到岗位雷达，打开公司岗位后点击“加入待诊断”。</p><button class="btn primary" data-job-tab="radar">选择公司</button></div>`}
+    </div>` : `<div class="large-empty"><strong>还没有待诊断公司</strong><p>回到岗位雷达，打开公司岗位后点击“加入岗位诊断”。</p><button class="btn primary" data-job-tab="radar">去选择公司</button></div>`}
   `;
 }
 
@@ -2013,13 +2013,13 @@ function hasRealProfile() {
 function renderJobSources() {
   return `
     <div class="source-layout">
-      <section class="panel pad"><div class="panel-title">岗位数据来源</div><div class="panel-sub">部分来源暂不可用时，仍可查看其余来源及现有数据。</div><div class="source-list">
+      <section class="panel pad"><div class="panel-title">岗位数据来源</div><div class="panel-sub">来源失败时不会阻断其他来源；页面会保留离线示例。</div><div class="source-list">
         ${radarSourceStatus.map(source => `<article class="source-card"><span class="source-dot ${source.state}"></span><div><strong>${escapeHtml(source.name)}</strong><p>${escapeHtml(source.cadence)} · ${escapeHtml(source.license)}</p></div><div class="source-count">${source.state === "loading" ? "连接中" : source.state === "ok" ? `${source.count.toLocaleString("zh-CN")} 条` : "暂不可用"}</div><a href="${escapeHtml(source.homepage)}" target="_blank" rel="noopener noreferrer">查看来源</a></article>`).join("")}
-      </div><div class="source-note"><strong>投递前核对</strong><p>请在招聘官网确认届别、岗位要求和截止时间。</p></div></section>
+      </div><div class="source-note"><strong>数据边界</strong><p>公开聚合用于发现线索；投递前仍应打开企业官网确认届别、岗位要求和截止时间。后续会逐步增加企业官网、国家大学生就业平台和央企公告源。</p></div></section>
       <section class="panel pad feishu-sync-card"><div class="sync-head"><div><div class="panel-title">公开与私人数据</div><div class="panel-sub">岗位库可以公开更新，你的求职记录不会写入 GitHub 仓库。</div></div><span class="tag success">已拆分</span></div>
         <div class="sync-flow"><div><strong>公开</strong><span>岗位与投递规则</span></div><span>≠</span><div><strong>私人</strong><span>简历与求职进度</span></div></div>
-        <div class="sync-fields"><strong>保存方式</strong><p>登录后，个人记录按账号云端保存；简历文件和录音仅存当前浏览器。</p></div>
-        <button class="btn" data-modal="privacy">查看数据与隐私说明</button>
+        <div class="sync-fields"><strong>存储原则</strong><p>私人结构化资料保存在当前浏览器；登录后按账号同步到 Supabase 私人空间。简历原文件和面试录音始终只保留在当前浏览器。</p></div>
+        <button class="btn" disabled>${cloudUser ? "私人数据已云端同步" : "私人数据仅存当前浏览器"}</button>
       </section>
     </div>
   `;
@@ -2071,7 +2071,7 @@ const resumeSkillCards = [
     id: "profile-fields",
     glyph: "填",
     title: "填写当前页",
-    description: "根据已确认的资料填写网申字段。",
+    description: "识别当前招聘网页中的固定字段，并把真实资料直接填入页面。",
     needs: "当前招聘网页 + 已保存的个人资料",
     prompt: "请使用 $job-application-agent 操作我当前打开的招聘网页。读取已保存的个人资料和简历，填写当前页中能够明确确定的姓名、联系方式、教育经历、实习和项目字段。未明确的信息不要猜，集中列出等我补充。填完后停下，不要提交。"
   },
@@ -2079,7 +2079,7 @@ const resumeSkillCards = [
     id: "resume-upload",
     glyph: "传",
     title: "上传并核对简历",
-    description: "上传简历，核对网站自动填入的信息。",
+    description: "调用原 Skill 的浏览器上传流程，等待解析后检查自动回填。",
     needs: "当前招聘网页 + 已导入的简历文件",
     prompt: "请使用 $job-application-agent 的 Browser uploads 流程操作当前招聘网页。上传我已经导入的标准简历，等待网站解析完成，核对显示的文件名以及被自动回填的字段，并修复解析时覆盖或清空的事实字段。完成后停下，不要提交。"
   },
@@ -2087,7 +2087,7 @@ const resumeSkillCards = [
     id: "narrative-answers",
     glyph: "答",
     title: "填写开放题",
-    description: "根据简历和项目经历回答网页问题。",
+    description: "读取网页题目，用简历中的真实证据生成回答并填入对应输入框。",
     needs: "当前招聘网页 + 简历与项目事实",
     prompt: "请使用 $job-application-agent 操作当前招聘网页。读取页面上的开放题，严格按照 Skill 自带的 APPLICATION_GUIDANCE，使用我简历和项目库中的真实证据生成答案并直接填入对应输入框。不得编造经历、数字、技能或公司信息。完成后列出已填内容和待确认项，不要提交。"
   },
@@ -2148,7 +2148,9 @@ function renderResumeVault() {
   return `
     <section class="resume-brief">
       <div>
-        <h2>资料完整度</h2>
+        <span class="resume-brief-label">我的简历资料</span>
+        <h2>维护一次，按岗位反复调用</h2>
+        <p>身份、教育、项目和回答统一放在这里。投递 Skill 只引用你确认过的事实。</p>
       </div>
       <div class="resume-brief-stats">
         <div><strong>${completeness.complete}/${completeness.total}</strong><span>核心资料</span></div>
@@ -2160,7 +2162,7 @@ function renderResumeVault() {
     <div class="vault-layout">
       <div class="stack">
         <section class="panel pad vault-section">
-          <div class="vault-head"><div><h2>基本信息与求职偏好</h2></div><button class="btn small" data-modal="resume-profile">编辑</button></div>
+          <div class="vault-head"><div><h2>基本信息与求职偏好</h2><p>自动填写高频固定字段</p></div><button class="btn small" data-modal="resume-profile">编辑</button></div>
           <dl class="fact-grid">
             <div><dt>姓名</dt><dd>${escapeHtml(p.name) || "待补充"}</dd></div>
             <div><dt>联系方式</dt><dd>${escapeHtml(p.phone) || "待补充"}<br>${escapeHtml(p.email) || ""}</dd></div>
@@ -2171,14 +2173,14 @@ function renderResumeVault() {
           </dl>
         </section>
         <section class="panel pad vault-section">
-          <div class="vault-head"><div><h2>教育与经历</h2></div><button class="btn small" data-modal="resume-profile">编辑</button></div>
+          <div class="vault-head"><div><h2>教育与经历</h2><p>网申中的学校、专业、学历和经历描述</p></div><button class="btn small" data-modal="resume-profile">编辑</button></div>
           <div class="source-block">
-            <strong>${escapeHtml(p.school) || "教育信息待补充"}</strong>
+            <strong>${escapeHtml(p.school) || "还没有教育信息"}</strong>
             <span>${[p.major, p.degree, p.graduation].filter(Boolean).map(escapeHtml).join(" / ")}</span>
           </div>
           <div class="source-block">
             <strong>${escapeHtml(p.internshipRole) || "核心经历"}</strong>
-            <span>${escapeHtml(p.experience) || "经历描述待补充"}</span>
+            <span>${escapeHtml(p.experience) || "还没有经历描述"}</span>
           </div>
         </section>
         <section class="panel pad vault-section">
@@ -2190,11 +2192,11 @@ function renderResumeVault() {
       </div>
       <div class="stack">
         <section class="panel pad vault-section">
-          <div class="vault-head"><div><h2>简历文件</h2><p>文件仅存当前浏览器</p></div><label class="btn small file-button">添加文件<input id="resume-document" type="file" accept=".pdf,.doc,.docx,.txt" hidden></label></div>
+          <div class="vault-head"><div><h2>简历文件</h2><p>文件保存在当前浏览器，不会上传</p></div><label class="btn small file-button">添加文件<input id="resume-document" type="file" accept=".pdf,.doc,.docx,.txt" hidden></label></div>
           <div class="document-list">
-            ${(state.resumeDocuments || []).map(document => `<article class="document-row"><div class="document-mark">${escapeHtml(document.extension || "CV")}</div><div><strong>${escapeHtml(document.name)}</strong><span>${escapeHtml(document.sizeLabel)} / ${escapeHtml(document.addedAt)}</span></div><div class="document-actions"><button class="btn small ghost" data-download-document="${document.id}">下载</button><label class="btn small ghost file-button">补回文件<input type="file" accept=".pdf,.doc,.docx,.txt" data-restore-document="${document.id}" hidden></label><button class="btn small ghost danger" data-remove-document="${document.id}">删除</button></div></article>`).join("") || `<div class="inline-empty">支持 PDF、Word、文本文件。</div>`}
+            ${(state.resumeDocuments || []).map(document => `<article class="document-row"><div class="document-mark">${escapeHtml(document.extension || "CV")}</div><div><strong>${escapeHtml(document.name)}</strong><span>${escapeHtml(document.sizeLabel)} / ${escapeHtml(document.addedAt)}</span></div><div class="document-actions"><button class="btn small ghost" data-download-document="${document.id}">下载</button><label class="btn small ghost file-button">补回文件<input type="file" accept=".pdf,.doc,.docx,.txt" data-restore-document="${document.id}" hidden></label><button class="btn small ghost danger" data-remove-document="${document.id}">删除</button></div></article>`).join("") || `<div class="inline-empty">支持 PDF、Word 和文本简历。MVP 先保存原文件和结构化资料。</div>`}
           </div>
-          <p class="field-help">换设备或网址后，点击“补回文件”选择同名原件。</p>
+          <p class="field-help">换网址或浏览器后，可用“补回文件”选择同名原件。只补齐本机附件，不新增记录、不覆盖已有文件，也不会上传云端。</p>
         </section>
         <section class="panel pad vault-section">
           <div class="vault-head"><div><h2>常见问题答案库</h2><p>先保存事实，按不同岗位再改写</p></div><button class="btn small" data-modal="answer">添加回答</button></div>
@@ -2202,6 +2204,7 @@ function renderResumeVault() {
             ${(state.answerBank || []).map(answer => `<article><strong>${escapeHtml(answer.question)}</strong><p>${escapeHtml(answer.answer)}</p><button class="text-action" data-delete-answer="${answer.id}">删除</button></article>`).join("") || `<div class="inline-empty">可先添加申请动机、职业规划、优势和到岗时间。</div>`}
           </div>
         </section>
+        <section class="privacy-note"><strong>隐私边界</strong><p>登录后的结构化内容同步到你的个人云端；上传文件仍只保存在本机。Skill 不猜测缺失信息，也不会替你点击最终提交。</p></section>
       </div>
     </div>
   `;
@@ -2210,9 +2213,14 @@ function renderResumeVault() {
 function renderResumeSkills() {
   return `
     <section class="skill-intro panel pad">
-      <div><h2>网申填写助手</h2><p>复制指令到助手对话中使用。</p></div>
+      <div><h2>开源网页投递 Skill</h2><p>底层使用原版 job-application-agent。四张卡是它在网申网页里的四种直接操作。</p></div>
+      <a class="skill-source-link" href="https://github.com/vaibhavarora14/job-application-agent" target="_blank" rel="noreferrer">查看 GitHub 源码</a>
     </section>
-    <details class="source-note copy-help"><summary>首次使用与功能说明</summary><p>请在使用的助手中安装 job-application-agent，并确认标准简历和个人资料。本站提供调用指令，操作在助手中执行。</p><p><a href="https://github.com/vaibhavarora14/job-application-agent" target="_blank" rel="noreferrer">查看开源项目</a></p></details>
+    <div class="skill-source-strip">
+      <strong>job-application-agent</strong>
+      <span>开源原版已完整安装</span>
+      <span>匿名统计与岗位来源共享已关闭</span>
+    </div>
     <div class="resume-skill-grid">
       ${resumeSkillCards.map(skill => `
         <article class="resume-skill-card">
@@ -2223,13 +2231,13 @@ function renderResumeSkills() {
             <span>${skill.needs}</span>
           </div>
           <div class="skill-card-actions">
-            <details class="skill-prompt-details"><summary>查看指令</summary><pre>${escapeHtml(skill.prompt)}</pre></details>
-            <button class="btn small primary" data-copy-resume-skill="${skill.id}">复制指令</button>
+            <details class="skill-prompt-details"><summary>查看调用内容</summary><pre>${escapeHtml(skill.prompt)}</pre></details>
+            <button class="btn small primary" data-copy-resume-skill="${skill.id}">复制调用</button>
           </div>
         </article>
       `).join("")}
     </div>
-    <p class="skill-usage-note">先打开并登录招聘网页，再使用指令。验证码、敏感信息和最终提交由你确认。</p>
+    <p class="skill-usage-note">第一次使用会请你选择一份标准简历并确认个人资料，只需设置一次。之后先打开并登录招聘网页，再复制其中一个调用到你和助手的对话。验证码、敏感信息和最终提交仍由你确认。</p>
   `;
 }
 
@@ -2237,7 +2245,7 @@ function renderResumeDrafts() {
   const drafts = state.applicationDrafts || [];
   const active = drafts.find(item => item.id === state.activeApplicationDraft) || drafts[0];
   if (!active) {
-    return `<div class="large-empty"><strong>还没有投递草稿</strong><p>选择目标岗位，根据已保存的资料生成填写草稿。</p><button class="btn primary" data-modal="autofill">新建投递草稿</button></div>`;
+    return `<div class="large-empty"><strong>还没有投递草稿</strong><p>选择一个目标岗位，Skill 会生成可核对的字段映射。</p><button class="btn primary" data-modal="autofill">新建投递草稿</button></div>`;
   }
   const job = state.jobs.find(item => item.id === active.jobId);
   const selectedCount = active.fields.filter(field => field.selected).length;
@@ -2261,7 +2269,7 @@ function renderResumeDrafts() {
             <small>来源：${escapeHtml(field.source)}</small></div>
           </article>`).join("")}
         </div>
-        <div class="draft-actions"><p>核对后复制填写内容，在招聘网站使用。</p><div><button class="btn" data-action="copy-fill-package">复制填写包</button><button class="btn primary" data-action="review-draft">${active.reviewed ? "重新确认" : "完成核对"}</button></div></div>
+        <div class="draft-actions"><p>系统不会打开外部网站或自动提交。下一步可接浏览器扩展完成页面识别和填入。</p><div><button class="btn" data-action="copy-fill-package">复制填写包</button><button class="btn primary" data-action="review-draft">${active.reviewed ? "重新确认" : "完成核对"}</button></div></div>
       </section>
     </div>
   `;
@@ -2272,7 +2280,7 @@ function renderResume() {
   const currentTab = state.resumeView || "vault";
   return viewWrap("resume", `
     <div class="page-heading">
-      <div><h1>简历资料与网申填写</h1><p>简历和经历只维护一次，再按不同岗位生成可核对的填写草稿。</p></div>
+      <div><h1>简历资料与智能填写</h1><p>简历和经历只维护一次，再按不同岗位生成可核对的填写草稿。</p></div>
       <button class="btn primary" data-modal="autofill">新建投递草稿</button>
     </div>
     <nav class="resume-tabs" aria-label="简历与投递模块">
@@ -2320,10 +2328,10 @@ function renderInterview() {
       <div class="heading-actions"><button class="btn" data-action="export-interviews">导出笔面记录</button><button class="btn primary" data-modal="interview-record">添加笔面试</button></div>
     </div>
     <div class="interview-metrics" aria-label="按状态筛选笔面记录">
-      <button class="${filters.status === "all" ? "active" : ""}" data-interview-status-filter="all"><span>${filters.stage === "all" ? "全部环节" : "当前环节"}</span><strong>${stageRecords.length}</strong></button>
-      <button class="${filters.status === "scheduled" ? "active" : ""}" data-interview-status-filter="scheduled"><span>待进行</span><strong>${scheduled}</strong></button>
+      <button class="${filters.status === "all" ? "active" : ""}" data-interview-status-filter="all"><span>${filters.stage === "all" ? "全部环节" : "当前环节"}</span><strong>${stageRecords.length}</strong><small>查看当前环节的全部记录</small></button>
+      <button class="${filters.status === "scheduled" ? "active" : ""}" data-interview-status-filter="scheduled"><span>待进行</span><strong>${scheduled}</strong><small>定位需要提前准备的公司</small></button>
       <button class="${filters.status === "completed" ? "active" : ""}" data-interview-status-filter="completed"><span>已完成</span><strong>${completed}</strong><small>包括待结果和已出结果</small></button>
-      <button class="${filters.status === "recording" ? "active" : ""}" data-interview-status-filter="recording"><span>已存录音</span><strong>${withRecording}</strong></button>
+      <button class="${filters.status === "recording" ? "active" : ""}" data-interview-status-filter="recording"><span>已存录音</span><strong>${withRecording}</strong><small>定位可以继续复盘的记录</small></button>
     </div>
     <div class="practice-tabs interview-tabs" role="tablist" aria-label="笔面试模块">
       ${[["records", `环节记录 ${visibleRecords.length}`], ["review", "复盘记录"], ["prep", "备战清单"]].map(([id, label]) => `<button class="practice-tab ${activeTab === id ? "active" : ""}" data-interview-tab="${id}" role="tab">${label}</button>`).join("")}
@@ -2380,7 +2388,7 @@ function renderInterviewRecords() {
       <section class="panel pad interview-record-detail">
         <div class="record-detail-head"><div><span>${escapeHtml(record.round)}</span><h2>${escapeHtml(record.company)} · ${escapeHtml(record.role)}</h2><p>${escapeHtml(formatInterviewDate(record.date))}${record.duration ? ` · ${escapeHtml(record.duration)}` : ""}</p></div><span class="tag ${record.status === "scheduled" ? "warning" : "success"}">${escapeHtml(interviewStatusLabel(record))}</span></div>
         <div class="record-status-editor">
-          <div><strong>环节状态</strong><span>关联投递进度同步更新。</span></div>
+          <div><strong>这个环节现在是什么状态？</strong><span>修改后会同步更新对应岗位的进度和未通过类型。</span></div>
           <select data-record-result="${record.id}" aria-label="${escapeHtml(record.company)}${escapeHtml(record.round)}状态">
             ${PROCESS_RESULT_OPTIONS.map(([value, label]) => `<option value="${value}" ${record.result === value ? "selected" : ""}>${label}</option>`).join("")}
           </select>
@@ -2390,7 +2398,7 @@ function renderInterviewRecords() {
           <div><span>本次问题</span><strong>${record.questions.length}</strong><p>${record.questions[0] ? escapeHtml(record.questions[0]) : "结束后把遇到的问题整理在复盘记录里"}</p></div>
           <div><span>下一步</span><p>${escapeHtml(record.nextActions || "补充下一步行动")}</p></div>
         </div>
-        <div class="review-preview"><span>最近复盘</span><p>${escapeHtml(record.improvements || record.assistantReview || "暂无复盘记录。")}</p></div>
+        <div class="review-preview"><span>最近复盘</span><p>${escapeHtml(record.improvements || record.assistantReview || "这场面试还没有复盘。")}</p></div>
         <div class="detail-actions">${application ? `<button class="btn" data-open-application="${application.id}">查看对应投递</button>` : ""}<button class="btn" data-interview-tab="prep">查看准备材料</button><button class="btn primary" data-action="review-record" data-record-id="${record.id}">${record.status === "scheduled" ? "预先记录问题" : "进入复盘"}</button></div>
       </section>
     </div>
@@ -2400,7 +2408,7 @@ function renderInterviewRecords() {
 function renderInterviewRecording(record) {
   if (!INTERVIEW_STAGES.includes(stageForProcessRecord(record.round)) && !record.recording) return "";
   if (!record.recording) {
-    return `<div class="recording-box empty"><div><strong>添加面试录音</strong><p>录音仅存当前浏览器，请保留原文件。</p></div><label class="btn" for="audio-${record.id}">选择录音</label><input id="audio-${record.id}" type="file" accept="audio/*,.m4a,.mp3,.wav,.aac,.mp4" data-audio-upload="${record.id}" hidden></div>`;
+    return `<div class="recording-box empty"><div><strong>添加面试录音</strong><p>支持常见音频格式。录音只保存在当前浏览器，不会上传到网络。</p></div><label class="btn" for="audio-${record.id}">选择录音</label><input id="audio-${record.id}" type="file" accept="audio/*,.m4a,.mp3,.wav,.aac,.mp4" data-audio-upload="${record.id}" hidden></div>`;
   }
   return `<div class="recording-box"><div class="recording-meta"><span class="recording-icon">音</span><div><strong>${escapeHtml(record.recording.name)}</strong><p>${Math.max(1, Math.round((record.recording.size || 0) / 1024 / 1024 * 10) / 10)} MB · 本机保存</p></div></div><audio controls preload="metadata" data-recording-audio="${record.id}"></audio><div class="recording-actions"><button class="btn small" data-action="download-recording" data-record-id="${record.id}">下载备份</button><label class="btn small" for="audio-${record.id}">替换</label><input id="audio-${record.id}" type="file" accept="audio/*,.m4a,.mp3,.wav,.aac,.mp4" data-audio-upload="${record.id}" hidden><button class="btn small ghost danger" data-action="delete-recording" data-record-id="${record.id}">删除</button></div></div>`;
 }
@@ -2414,7 +2422,7 @@ function renderInterviewReview() {
       <aside class="panel pad review-sidebar">
         <div class="panel-title">选择面试</div><div class="panel-sub">录音、问题与结论会保存到同一条记录</div>
         <div class="review-record-picker">${records.map(item => `<button class="${record.id === item.id ? "active" : ""}" data-interview-record="${item.id}" data-open-review="true"><strong>${escapeHtml(item.company)}</strong><span>${escapeHtml(item.role)} · ${escapeHtml(item.round)} · ${escapeHtml(interviewStatusLabel(item))}</span></button>`).join("")}</div>
-        <div class="review-privacy"><strong>录音说明</strong><p>需要助手复盘时，将录音和问题发到对话中。</p></div>
+        <div class="review-privacy"><strong>录音说明</strong><p>第一版使用浏览器本地存储。需要我深入复盘时，你可以把录音和整理后的问题发给我。</p></div>
       </aside>
       <form class="panel pad review-form" id="interview-review-form">
         <input type="hidden" name="id" value="${record.id}">
@@ -2426,7 +2434,7 @@ function renderInterviewReview() {
           <div class="field"><label for="review-strengths">做得好的</label><textarea id="review-strengths" name="strengths" placeholder="哪些表达和案例值得保留">${escapeHtml(record.strengths)}</textarea></div>
           <div class="field"><label for="review-improvements">需要改进</label><textarea id="review-improvements" name="improvements" placeholder="下一次应该具体改变什么">${escapeHtml(record.improvements)}</textarea></div>
         </div>
-        <div class="field full assistant-review-field"><label for="assistant-review">助手复盘结论</label><textarea id="assistant-review" name="assistantReview" rows="5" placeholder="粘贴助手提供的复盘结论、回答建议和共性问题">${escapeHtml(record.assistantReview)}</textarea></div>
+        <div class="field full assistant-review-field"><label for="assistant-review">助手复盘结论</label><textarea id="assistant-review" name="assistantReview" rows="5" placeholder="把我给出的诊断、改写答案和共性问题保存在这里">${escapeHtml(record.assistantReview)}</textarea></div>
         <div class="field full"><label for="review-actions">下一步行动</label><textarea id="review-actions" name="nextActions" rows="3" placeholder="例如：重录自我介绍、补充量化结果、准备一道追问">${escapeHtml(record.nextActions)}</textarea></div>
         <div class="review-result-row"><label for="review-result">环节结果</label><select id="review-result" name="result">${PROCESS_RESULT_OPTIONS.map(([value, label]) => `<option value="${value}" ${record.result === value ? "selected" : ""}>${label}</option>`).join("")}</select><button class="btn primary" type="submit">保存复盘</button></div>
       </form>
@@ -2483,6 +2491,7 @@ function renderPipeline() {
   const interviewCount = state.applications.filter(app => !app.archivedAt && INTERVIEW_STAGES.includes(app.status)).length;
   const failedCount = state.applications.filter(app => !app.archivedAt && REJECTION_STAGES.includes(app.status)).length;
   const archivedCount = state.applications.filter(app => app.archivedAt).length;
+  const privateStorageLabel = cloudUser ? "Supabase 私人空间" : "当前浏览器";
   return viewWrap("pipeline", `
     <div class="page-heading pipeline-heading">
       <div><h1>我的投递进度</h1><p>集中查看每份投递的当前阶段、下一步与最终结果。</p></div>
@@ -2495,6 +2504,7 @@ function renderPipeline() {
       <div><span>面试阶段</span><strong>${interviewCount}</strong></div>
       <div><span>未通过</span><strong>${failedCount}</strong></div>
     </div>
+    <div class="pipeline-connection-note"><strong>私人数据存于${privateStorageLabel}</strong><span>投递、简历和笔面记录已与公开岗位库分开，不会进入 GitHub 公开仓库。</span></div>
     <div class="pipeline-scope-tabs" aria-label="投递记录范围">
       <button class="${filters.scope === "active" ? "active" : ""}" data-pipeline-scope="active">未归档 ${unarchivedCount}</button>
       <button class="${filters.scope === "archived" ? "active" : ""}" data-pipeline-scope="archived">已归档 ${archivedCount}</button>
@@ -2523,7 +2533,7 @@ function renderPipeline() {
           const radarLinked = radarJobs.some(item => item.id === job.id);
           const radarCompanyMatch = radarJobs.find(item => companyKeysMatch(item.company, job.company));
           return `<tr data-application-row="${app.id}">
-            <td><div class="table-company"><strong>${escapeHtml(job.company)}</strong><span class="sync-mini ${app.syncStatus || "local_only"}">${app.syncStatus === "imported" ? "飞书已导入" : app.feishuRecordId ? "飞书已关联"  : "工作台记录"}</span></div></td>
+            <td><div class="table-company"><strong>${escapeHtml(job.company)}</strong><span class="sync-mini ${app.syncStatus || "local_only"}">${app.syncStatus === "imported" ? "飞书已导入" : app.feishuRecordId ? "飞书已关联" : "工作台本地"}</span></div></td>
             <td><div class="table-job-heading"><strong class="table-role" title="${escapeHtml(job.role)}">${escapeHtml(job.role)}</strong><button class="table-link-button table-job-edit" data-edit-application="${app.id}" aria-label="编辑${escapeHtml(job.company)}的投递信息">编辑</button></div><span class="table-sub table-job-location" title="${escapeHtml(job.location || "地点待确认")}">${escapeHtml(job.location || "地点待确认")}</span></td>
             <td><select class="table-select stage-${app.status}" data-app-status="${app.id}" aria-label="${escapeHtml(job.company)}当前进度">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}" ${app.status === value ? "selected" : ""}>${label}</option>`).join("")}</select></td>
             <td>${renderProcessStateCell(app, interview, job)}</td>
@@ -2746,7 +2756,18 @@ function syncApplicationFromRecord(record) {
 
 function renderModal() {
   if (!state.modal) return "";
-  if (!hasPrivateAccess() && !["account", "privacy", "mailbox"].includes(state.modal)) state.modal = "account";
+  if (!hasPrivateAccess() && !["account", "privacy", "mailbox", "job-refresh-info"].includes(state.modal)) state.modal = "account";
+  if (state.modal === "job-refresh-info") {
+    return modalShell("管理员抓取", `
+      <div class="account-setup">
+        <span class="account-mark" aria-hidden="true">管</span>
+        <h3>仅仓库管理员可以运行</h3>
+        <p>没有 OfferFlow 仓库写入权限的用户无法触发抓取，也不会修改岗位数据。</p>
+        <div class="account-callout"><strong>普通用户无需操作</strong><span>岗位每天会自动更新两次，回到岗位页点击“检查新增”即可查看。</span></div>
+        <div class="form-actions"><button class="btn" data-action="close-modal">返回工作台</button><a class="btn primary" href="${JOB_REFRESH_WORKFLOW_URL}" target="_blank" rel="noopener noreferrer">我是管理员，继续 ↗</a></div>
+      </div>
+    `);
+  }
   if (state.modal === "mailbox") {
     const emailDomain = String(cloudUser?.email || state.profile.email || "").split("@")[1]?.toLowerCase() || "";
     const providers = [...MAILBOX_PROVIDERS].sort((a, b) => Number(b.domains.includes(emailDomain)) - Number(a.domains.includes(emailDomain)));
@@ -2759,6 +2780,7 @@ function renderModal() {
             return `<a class="mailbox-option ${preferred ? "preferred" : ""}" href="${provider.url}" target="_blank" rel="noreferrer"><span><strong>${provider.name}</strong><small>${preferred ? "当前账号邮箱" : provider.description}</small></span><em>打开</em></a>`;
           }).join("")}
         </div>
+        <p class="mailbox-note">如果你的邮箱不在列表里，可以直接在浏览器中打开对应邮箱官网。</p>
       </div>
     `);
   }
@@ -2767,22 +2789,22 @@ function renderModal() {
       return modalShell("登录与云同步", `
         <div class="account-setup">
           <span class="account-mark" aria-hidden="true">云</span>
-          <h3>登录服务暂不可用</h3>
-          <p>本站尚未配置登录与云同步服务，暂时无法保存个人记录。</p>
-          <div class="account-callout"><strong>仍可使用</strong><span>公开岗位浏览与题目练习。</span></div>
-          <button class="btn primary" data-action="close-modal">关闭</button>
+          <h3>云同步接口已准备好</h3>
+          <p>当前还没有连接 Supabase 项目，个人空间暂不可用。连接后，投递记录、简历资料、错题和进度会自动同步。</p>
+          <div class="account-callout"><strong>下一步需要</strong><span>免费 Supabase 项目的 Project URL 和 Publishable key。</span></div>
+          <button class="btn primary" data-action="close-modal">我知道了</button>
         </div>
       `);
     }
     if (cloudUser) {
-      return modalShell("账号与数据", `
+      return modalShell("账号与云同步", `
         <div class="account-overview">
           ${import.meta.env.DEV && hasPrivateAccess() ? `<div class="account-callout"><strong>旧版资料迁移（仅本机开发版）</strong><span>${escapeHtml(legacyMigrationNote || "先检查旧记录，再迁移原附件。不会覆盖云端，不删除旧文件。仅限原资料所有者操作。")}</span><button class="btn" data-action="check-legacy">检查旧版记录</button><button class="btn" data-action="export-legacy">下载旧版数据备份</button><button class="btn" data-action="migrate-legacy-files">迁移原附件</button></div>` : ""}
-          <div class="account-callout"><strong>${cloudStatusLabel()}</strong>${["conflict", "error", "cache-full"].includes(cloudSyncStatus) ? "<span>请先备份未同步的修改，再重试保存或载入云端版本。</span>" : ""}<button class="btn" data-action="reload-cloud">重新载入云端</button>${hasPrivateAccess() ? `<button class="btn" data-action="retry-cloud">重试保存</button>` : ""}</div>
-          ${workspaceSync.recovery ? `<div class="account-callout"><strong>发现未同步记录</strong><span>请下载恢复副本并核对，确认后可导入。</span><button class="btn" data-action="export-recovery">下载恢复副本</button></div>` : ""}
-          <div class="account-identity"><span class="account-mark success" aria-hidden="true">已</span><div><h3>${escapeHtml(cloudUser.email || "当前账号")}</h3><p>个人记录按账号同步；简历文件与录音仅存当前浏览器。</p></div></div>
+          <div class="account-callout"><strong>${cloudStatusLabel()}</strong><span>如有冲突，先下载本页备份，再载入云端版本；不会自动覆盖另一设备的修改。</span><button class="btn" data-action="reload-cloud">重新载入云端</button>${hasPrivateAccess() ? `<button class="btn" data-action="retry-cloud">重试保存</button>` : ""}</div>
+          ${workspaceSync.recovery ? `<div class="account-callout"><strong>发现本账号未同步的草稿</strong><span>先下载恢复副本并核对，再决定是否导入；不会自动覆盖云端。</span><button class="btn" data-action="export-recovery">下载恢复副本</button></div>` : ""}
+          <div class="account-identity"><span class="account-mark success" aria-hidden="true">已</span><div><h3>${escapeHtml(cloudUser.email || "当前账号")}</h3><p>结构化资料已开启云同步，简历文件和面试录音保存在当前浏览器。</p></div></div>
           <section class="data-management" aria-labelledby="data-management-title">
-            <div><h3 id="data-management-title">数据管理</h3><p>可导出个人记录备份；简历文件与录音需单独下载。</p></div>
+            <div><h3 id="data-management-title">数据管理</h3><p>建议定期下载结构化备份。备份文件不包含简历原文件和面试录音。</p></div>
             <div class="data-actions"><button class="btn" data-action="export-workspace">下载数据备份</button><label class="btn" for="workspace-import">导入备份</label><input id="workspace-import" type="file" accept="application/json,.json" hidden><button class="btn danger" data-modal="confirm-clear-data">清空我的数据</button></div>
           </section>
           <button class="text-action account-privacy-link" data-modal="privacy">查看数据与隐私说明</button>
@@ -2790,22 +2812,22 @@ function renderModal() {
         </div>
       `);
     }
-    return modalShell("注册与登录", `
+    return modalShell("注册 / 登录", `
       <form id="cloud-login-form" class="account-login-form">
         <div class="account-setup compact">
           <span class="account-mark" aria-hidden="true">云</span>
-          <h3>邮箱验证登录</h3>
-          <p>通过邮件链接登录，无需密码。首次使用将自动创建账号。</p>
-          <p>访客可浏览岗位和练习题目；登录可保存求职与练习记录。</p>
+          <h3>使用邮箱登录</h3>
+          <p>首次使用此邮箱会创建账号，已有账号直接登录，无需设置密码。通过邮件验证后，你的结构化求职记录会同步到本网站维护者管理的 Supabase 云端。</p>
+          <p>不注册也能刷题、浏览岗位；登录后才能保存个人进度和错题。</p>
         </div>
-        <div class="field"><label for="cloud-email">邮箱地址</label><input id="cloud-email" name="email" type="email" autocomplete="email" required placeholder="name@example.com"></div>
+        <div class="field"><label for="cloud-email">邮箱</label><input id="cloud-email" name="email" type="email" autocomplete="email" required placeholder="name@example.com"></div>
         <div class="login-data-summary">
-          <strong>数据保存与访问</strong>
-          <p>个人记录按账号保存至云端，普通用户之间数据隔离；网站维护者具备云端管理权限。</p><p>简历文件与录音仅保存在当前浏览器，不随账号跨设备同步。</p>
-          <button class="text-action" type="button" data-modal="privacy">查看完整说明</button>
+          <strong>登录前请确认</strong>
+          <p>普通用户不能查看彼此的数据；网站维护者因负责云端服务，具备后台管理权限。简历原文件和面试录音目前只保存在当前浏览器。</p>
+          <button class="text-action" type="button" data-modal="privacy">查看完整的数据与隐私说明</button>
         </div>
-        <label class="consent-check" for="privacy-consent"><input id="privacy-consent" name="privacyConsent" type="checkbox" value="accepted" required><span>我已阅读并同意《数据与隐私说明》</span></label>
-        ${captchaSiteKey ? `<div id="login-captcha"></div><p class="captcha-status" role="status">同意《数据与隐私说明》后加载安全验证。</p><button class="text-action" type="button" data-action="retry-captcha">重试验证</button>` : ""}
+        <label class="consent-check" for="privacy-consent"><input id="privacy-consent" name="privacyConsent" type="checkbox" value="accepted" required><span>我已阅读并同意数据与隐私说明</span></label>
+        ${captchaSiteKey ? `<div id="login-captcha"></div><p class="captcha-status" role="status">勾选隐私说明后加载安全验证。</p><button class="text-action" type="button" data-action="retry-captcha">重试验证</button>` : ""}
         <p class="privacy-error" role="alert" aria-live="polite"></p>
         <div class="form-actions"><button class="btn" type="button" data-action="close-modal">取消</button><button class="btn primary" type="submit">发送登录邮件</button></div>
       </form>
@@ -2815,34 +2837,34 @@ function renderModal() {
     return modalShell("数据与隐私说明", `
       <div class="privacy-policy">
         <div class="privacy-policy-intro">
-          <strong>服务与数据处理</strong>
-          <p>OfferFlow 为个人维护的公开测试服务。本说明介绍账号数据的收集、用途、访问权限及管理方式。</p>
+          <strong>这是个人测试项目，不是匿名服务</strong>
+          <p>使用邮箱登录即会产生云端账号。请先了解数据的保存方式，再决定是否登录和填写个人资料。</p>
         </div>
         <section>
-          <h3>收集与保存的内容</h3>
-          <p>登录邮箱，以及主动填写或生成的简历资料、岗位收藏、投递进度、待办状态、练习记录、项目素材和笔面文字记录。</p>
+          <h3>会保存哪些内容</h3>
+          <p>登录邮箱，以及你填写的简历与基础资料、岗位收藏、投递进度、刷题记录、项目素材和面试文字记录。</p>
         </section>
         <section>
-          <h3>数据用途与存储</h3>
-          <p>个人记录保存在维护者管理的 Supabase 云端（澳大利亚悉尼区域），用于账号登录、记录同步及工作区恢复。简历原文件和录音仅保存在当前浏览器，不上传云端。</p>
+          <h3>保存在哪里、用于什么</h3>
+          <p>结构化内容保存在本网站维护者管理的 Supabase 云端（澳大利亚悉尼区域），用于账号登录、跨设备同步和恢复个人工作区。简历原文件和面试录音目前只保存在当前浏览器，不上传云端。</p>
           <p>邮箱验证邮件由 Resend 发送。启用人机验证时，勾选本说明后将加载 Cloudflare Turnstile，由其处理 IP 地址及浏览器验证信号以拦截恶意请求；邮箱与验证结果发送给 Supabase 完成登录。</p>
         </section>
         <section>
-          <h3>数据访问权限</h3>
-          <p>不同账号的个人记录相互隔离，普通用户无法访问其他账号的数据。维护者因管理云端服务，具备后台数据管理权限；个人记录不会作为公开岗位库或共享题库展示。</p>
+          <h3>谁可以看到</h3>
+          <p>每个邮箱账号的数据相互隔离，其他普通用户无法查看。网站维护者因管理 Supabase 项目，技术上具备后台管理权限，不会把个人数据公开展示或提供给其他用户。</p>
         </section>
         <section>
-          <h3>数据保留与管理</h3>
-          <p>无需登录即可浏览公开岗位和练习题目。登录后可在“账号与数据”中导出记录或清空个人数据；清空数据不会注销登录账号。</p>
-          <p>个人记录无固定自动删除期限，将保留至主动清空或维护者处理删除申请。本地附件保留至在应用中删除或清除本站浏览器存储。删除前请保存所需备份；记录备份不包含简历文件与录音。</p>
+          <h3>你的选择与数据管理</h3>
+          <p>不登录也可以浏览公开岗位和公开题库。登录后可在“账号与云同步”中下载结构化备份或清空个人数据。清空操作不会删除邮箱账号本身。</p>
+          <p>目前没有按天自动清理的机制：工作区内容会保留到你主动清空或维护者处理删除申请；本地附件会保留到你在应用中删除或清除该网站的浏览器存储。请在删除前下载所需备份。</p>
           <p>反馈、数据删除或账号注销申请，请联系 <a href="mailto:lic0202@163.com">lic0202@163.com</a>。注销申请请从注册邮箱发送，维护者核实后处理；不要在邮件中发送密码、验证码、登录链接或完整简历。</p>
         </section>
         <section>
-          <h3>信息填写范围</h3>
-          <p>仅填写求职管理所需信息，请勿提供身份证号、银行卡号、账号密码或健康信息等无关敏感资料。</p>
+          <h3>请勿上传</h3>
+          <p>请不要填写身份证号、银行卡号、账号密码、健康信息等与求职助手功能无关的敏感信息。</p>
         </section>
         <p class="privacy-policy-note">当前为公开测试版本。云服务的系统日志与备份可能有独立保留周期；清空应用数据不等于立即清除服务商的所有备份。</p>
-        <div class="form-actions"><button class="btn primary" type="button" data-modal="account">${cloudUser ? "返回账号设置" : "返回登录"}</button></div>
+        <div class="form-actions"><button class="btn primary" type="button" data-modal="account">返回登录</button></div>
       </div>
     `);
   }
@@ -2855,7 +2877,7 @@ function renderModal() {
         </div>
         <div class="clear-counts"><span><strong>${state.applications.length}</strong> 条投递</span><span><strong>${state.interviewRecords.length}</strong> 场面试</span><span><strong>${state.resumeDocuments.length}</strong> 份简历文件</span></div>
         <div class="field"><label for="clear-confirmation">请输入“清空我的数据”进行确认</label><input id="clear-confirmation" name="confirmation" autocomplete="off" required></div>
-        <p class="field-help">此操作不会删除登录账号。</p>
+        <p class="field-help">你当前使用邮箱免密码登录，因此由有效登录状态和确认短语共同校验。账号本身不会被删除。</p>
         <p class="privacy-error" role="alert" aria-live="polite"></p>
         <div class="form-actions"><button class="btn" type="button" data-action="close-modal">取消</button><button class="btn danger solid" type="submit">确认永久清空</button></div>
       </form>
@@ -2885,7 +2907,7 @@ function renderModal() {
           <div class="field"><label for="profile-role">目标岗位</label><input id="profile-role" name="targetRole" value="${escapeHtml(state.profile.targetRole)}" required></div>
           <div class="field"><label for="profile-city">目标城市</label><input id="profile-city" name="targetCity" value="${escapeHtml(state.profile.targetCity)}"></div>
           <div class="field"><label for="profile-years">经验</label><input id="profile-years" name="years" value="${escapeHtml(state.profile.years)}"></div>
-          <div class="field full"><label for="profile-skills">核心能力</label><input id="profile-skills" name="skills" value="${state.profile.skills.map(escapeHtml).join("、")}"><span class="field-help">用顿号或逗号分隔，用于岗位偏好匹配。</span></div>
+          <div class="field full"><label for="profile-skills">核心能力</label><input id="profile-skills" name="skills" value="${state.profile.skills.map(escapeHtml).join("、")}"><span class="field-help">用顿号或逗号分隔，后续会用于公司岗位方向匹配。</span></div>
         </div>
         <div class="form-actions"><button class="btn" type="button" data-action="close-modal">取消</button><button class="btn primary" type="submit">保存资料</button></div>
       </form>
@@ -2929,7 +2951,7 @@ function renderModal() {
     return modalShell("编辑投递信息", `
       <form id="application-edit-form">
         <input type="hidden" name="applicationId" value="${escapeHtml(application.id)}">
-        <p class="field-help">仅修改个人投递信息，保留进度与复盘。</p>
+        <p class="field-help">补充实际投递的岗位信息。只修改你的私人记录，不影响公共岗位雷达；投递进度和笔面复盘会保留。</p>
         <div class="form-grid">
           <div class="field"><label for="edit-company">公司</label><input id="edit-company" name="company" value="${escapeHtml(job.company)}" required></div>
           <div class="field"><label for="edit-role">具体岗位名称</label><input id="edit-role" name="role" value="${escapeHtml(job.role)}" required placeholder="例如：AI 产品经理（校招）"></div>
@@ -2955,7 +2977,7 @@ function renderModal() {
           <div class="field"><label for="new-batch">批次</label><select id="new-batch" name="batch"><option>正式批</option><option>提前批</option><option>实习</option><option>补录</option><option>春招</option></select></div>
           <div class="field"><label for="new-deadline">截止时间</label><input id="new-deadline" name="deadline" type="date"></div>
           <div class="field"><label for="new-status">当前进度</label><select id="new-status" name="status">${APPLICATION_STAGES.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
-          <div class="field"><label for="new-reminder">提醒日期</label><input id="new-reminder" name="reminderAt" type="date"><span class="field-help">提前 14 天显示在「求职概览」。</span></div>
+          <div class="field"><label for="new-reminder">提醒日期</label><input id="new-reminder" name="reminderAt" type="date"><span class="field-help">到期后会显示在「求职概览」。</span></div>
           <div class="field full"><label for="new-url">招聘系统或进展网址</label><input id="new-url" name="applyUrl" type="url" placeholder="https://"><span class="field-help">填写可以查看投递状态的招聘系统页面。</span></div>
         </div>
         <div class="form-actions"><button class="btn" type="button" data-action="close-modal">取消</button><button class="btn primary" type="submit">保存投递记录</button></div>
@@ -2994,7 +3016,7 @@ function renderModal() {
           <div class="field"><label for="resume-profile-major">专业</label><input id="resume-profile-major" name="major" value="${escapeHtml(p.major)}"></div>
           <div class="field"><label for="resume-profile-degree">学历</label><input id="resume-profile-degree" name="degree" value="${escapeHtml(p.degree)}"></div>
           <div class="field"><label for="resume-profile-graduation">毕业时间</label><input id="resume-profile-graduation" name="graduation" type="month" value="${escapeHtml(p.graduation)}"></div>
-          <div class="field full"><label for="resume-profile-skills">能力标签</label><input id="resume-profile-skills" name="skills" value="${p.skills.map(escapeHtml).join("、")}"><span class="field-help">用顿号或逗号分隔，用于 JD 关键词比对。</span></div>
+          <div class="field full"><label for="resume-profile-skills">能力标签</label><input id="resume-profile-skills" name="skills" value="${p.skills.map(escapeHtml).join("、")}"><span class="field-help">用顿号或逗号分隔。后续会用于 JD 匹配。</span></div>
           <div class="field full"><label for="resume-profile-summary">个人简介</label><textarea id="resume-profile-summary" name="summary" rows="4">${escapeHtml(p.summary)}</textarea></div>
           <div class="field full"><label for="resume-profile-experience">实习或核心经历</label><textarea id="resume-profile-experience" name="experience" rows="5">${escapeHtml(p.experience)}</textarea><span class="field-help">只写真实发生的动作和结果，避免只有职责。</span></div>
         </div>
@@ -3021,7 +3043,7 @@ function renderModal() {
           <span class="account-mark" aria-hidden="true">JD</span>
           <h3>还没有可用的具体岗位</h3>
           <p>先在岗位搜索中选择一个机会并补充具体 JD，或者在求职进度中记录一次投递。</p>
-          <button class="btn primary" data-action="close-modal">关闭</button>
+          <button class="btn primary" data-action="close-modal">我知道了</button>
         </div>
       `);
     }
@@ -3033,7 +3055,7 @@ function renderModal() {
           <div class="field full"><label for="autofill-platform">网申平台</label><select id="autofill-platform" name="platform"><option>企业招聘官网</option><option>牛客网</option><option>北森招聘系统</option><option>Workday</option><option>Greenhouse</option><option>其他平台</option></select></div>
           <div class="autofill-notice field full"><strong>生成后先核对</strong><span>高可信字段默认勾选，改写内容和缺失信息不会直接使用。</span></div>
         </div>
-        <div class="form-actions"><button class="btn" type="button" data-action="close-modal">取消</button><button class="btn primary" type="submit">生成填写内容</button></div>
+        <div class="form-actions"><button class="btn" type="button" data-action="close-modal">取消</button><button class="btn primary" type="submit">生成字段映射</button></div>
       </form>
     `);
   }
@@ -4208,7 +4230,7 @@ document.addEventListener("submit", async (event) => {
       state.jdContext = { jobId: job.id, keywords: extractKeywords(job.jd, job.tags), gaps: getGaps(job) };
       state.resumeView = "drafts";
       state.modal = null;
-      saveState("填写草稿已生成，请逐项核对");
+      saveState("已生成字段映射，请逐项核对");
       render();
     }
   }
@@ -4249,7 +4271,7 @@ document.addEventListener("submit", async (event) => {
     synchronizeApplicationProcessState(application);
     state.modal = null;
     state.activeView = "pipeline";
-    saveState("投递记录已添加");
+    saveState("投递记录已保存；飞书尚未连接");
     render();
   }
   if (event.target.id === "interview-record-form") {
