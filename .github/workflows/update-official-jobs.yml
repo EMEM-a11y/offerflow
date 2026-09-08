@@ -1,0 +1,39 @@
+name: Update official campus jobs
+
+on:
+  schedule:
+    - cron: '17 22,7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: official-campus-jobs
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read public campus positions from official recruitment sites
+        run: node scripts/update-official-jobs.mjs
+      - name: Commit verified snapshot when it changed
+        run: |
+          git config user.name "offerflow-jobs-bot"
+          git config user.email "bot@offerflow.local"
+          git add public/data/official-live-jobs.json
+          if git diff --staged --quiet; then
+            echo "No job changes."
+          else
+            git commit -m "chore(data): refresh official campus jobs"
+            git push
+          fi

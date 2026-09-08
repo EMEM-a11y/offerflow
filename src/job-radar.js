@@ -2,6 +2,14 @@ import { assetUrl } from "./asset-url.js";
 
 export const JOB_SOURCES = [
   {
+    id: "official-live",
+    name: "企业招聘官网",
+    url: assetUrl("data/official-live-jobs.json"),
+    homepage: "https://github.com/HA7CH/job-pro",
+    cadence: "官网定时采集 · 每日 2 次",
+    license: "MIT"
+  },
+  {
     id: "xiaozhao-radar",
     name: "校招雷达公开聚合",
     url: assetUrl("data/campus-jobs-snapshot.json"),
@@ -105,6 +113,50 @@ const OFFICIAL_LINK_POLICIES = [
     officialUrl: "https://moonton.jobs.feishu.cn/campus",
   },
   { company: /\u963f\u91cc|\u6dd8\u5929/, hosts: [/(^|\.)alibaba\.com$/] },
+  { company: /\u8682\u8681\u96c6\u56e2/, hosts: [/(^|\.)antgroup\.com$/] },
+  { company: /\u817e\u8baf/, hosts: [/(^|\.)join\.qq\.com$/] },
+  { company: /\u7f8e\u56e2/, hosts: [/(^|\.)zhaopin\.meituan\.com$/] },
+  { company: /\u5c0f\u7ea2\u4e66/, hosts: [/(^|\.)job\.xiaohongshu\.com$/] },
+  { company: /^\u4eac\u4e1c(?:\u96c6\u56e2|\u79d1\u6280|\u7269\u6d41|\u5065\u5eb7|\u96f6\u552e|\u5de5\u4e1a)?$/, hosts: [/(^|\.)campus\.jd\.com$/] },
+  { company: /\u5feb\u624b/, hosts: [/(^|\.)campus\.kuaishou\.cn$/] },
+  { company: /\u767e\u5ea6/, hosts: [/(^|\.)talent\.baidu\.com$/] },
+  { company: /\u7f51\u6613/, hosts: [/(^|\.)hr\.163\.com$/] },
+  { company: /\u6ef4\u6ef4/, hosts: [/(^|\.)talent\.didiglobal\.com$/] },
+  { company: /\u54d4\u54e9\u54d4\u54e9/, hosts: [/(^|\.)jobs\.bilibili\.com$/] },
+  { company: /\u62fc\u591a\u591a/, hosts: [/(^|\.)careers\.pinduoduo\.com$/, /(^|\.)careers\.pddglobalhr\.com$/] },
+  { company: /\u5c0f\u7c73/, hosts: [/(^|\.)xiaomi\.jobs\.f\.mioffice\.cn$/] },
+  { company: /\u851a\u6765/, hosts: [/(^|\.)nio\.jobs\.feishu\.cn$/] },
+  { company: /minimax/i, hosts: [/(^|\.)vrfi1sk8a0\.jobs\.feishu\.cn$/] },
+  { company: /\u534e\u4e3a/, hosts: [/(^|\.)career\.huawei\.com$/] },
+  { company: /\u5fae\u535a/, urls: [/app\.mokahr\.com\/(?:campus-recruitment|social-recruitment)\/sina\//i] },
+  { company: /\u7c73\u54c8\u6e38/, hosts: [/(^|\.)jobs\.mihoyo\.com$/] },
+  { company: /\u5e73\u5b89/, hosts: [/(^|\.)campus\.pingan\.com$/] },
+  { company: /\u643a\u7a0b|trip\.com/i, hosts: [/(^|\.)careers\.ctrip\.com$/] },
+  { company: /\u5b87\u6811/, hosts: [/(^|\.)www\.unitree\.com$/] },
+  { company: /\u6bd4\u4e9a\u8fea|byd/i, hosts: [/(^|\.)job\.byd\.com$/] },
+  { company: /\u7406\u60f3\u6c7d\u8f66/, hosts: [/(^|\.)www\.lixiang\.com$/] },
+  { company: /\u987a\u4e30/, hosts: [/(^|\.)campus\.sf-express\.com$/] },
+  { company: /oppo/i, hosts: [/(^|\.)careers\.oppo\.com$/] },
+  { company: /\u6708\u4e4b\u6697\u9762|moonshot/i, urls: [/app\.mokahr\.com\/social-recruitment\/moonshot\//i] },
+  { company: /\u667a\u8c31/, hosts: [/(^|\.)zhipu-ai\.jobs\.feishu\.cn$/, /(^|\.)zhipuai\.jobs\.feishu\.cn$/] },
+  { company: /\u7231\u5947\u827a|iqiyi/i, hosts: [/(^|\.)careers\.iqiyi\.com$/] },
+  { company: /\u667a\u5143(?:\u673a\u5668\u4eba)?|agibot/i, hosts: [/(^|\.)agirobot\.jobs\.feishu\.cn$/] },
+  { company: /\u8389\u8389\u4e1d|lilith/i, hosts: [/(^|\.)lilithgames\.jobs\.feishu\.cn$/] },
+  { company: /\u96f6\u4e00\u4e07\u7269|01\.ai/i, hosts: [/(^|\.)01ai\.jobs\.feishu\.cn$/] },
+  { company: /\u767e\u5ddd\u667a\u80fd/, urls: [/cq6qe6bvfr6\.jobs\.feishu\.cn\/baichuanzhaopin\//i] },
+  { company: /\u5546\u6c64|sensetime/i, hosts: [/(^|\.)hr\.sensetime\.com$/] },
+  { company: /\u5730\u5e73\u7ebf|horizon robotics/i, urls: [/wecruit\.hotjob\.cn\/.*su6409ef49bef57c635fd390a6/i] },
+  { company: /vivo/i, hosts: [/(^|\.)hr-campus\.vivo\.com$/, /(^|\.)vivo\.zhiye\.com$/] },
+  { company: /\u79d1\u5927\u8baf\u98de|iflytek/i, hosts: [/(^|\.)iflytek\.zhiye\.com$/] },
+  { company: /\u65f7\u89c6|megvii/i, urls: [/app\.mokahr\.com\/(?:campus_apply|social-recruitment)\/megviihr\//i] },
+  { company: /deepseek|\u6df1\u5ea6\u6c42\u7d22/i, urls: [/app\.mokahr\.com\/social-recruitment\/high-flyer\//i] },
+  { company: /\u94f6\u6cb3\u901a\u7528/, urls: [/app\.mokahr\.com\/social-recruitment\/yinhetongyong\//i] },
+  { company: /\u9636\u8dc3\u661f\u8fb0|stepfun/i, urls: [/app\.mokahr\.com\/social-recruitment\/step\//i] },
+  { company: /\u5bd2\u6b66\u7eaa|cambricon/i, urls: [/app\.mokahr\.com\/(?:campus-recruitment|social-recruitment)\/cambricon\//i] },
+  { company: /\u5409\u5229/, urls: [/app\.mokahr\.com\/social-recruitment\/geely\//i] },
+  { company: /\u5c0f\u9e4f(?:\u6c7d\u8f66)?|xpeng/i, hosts: [/(^|\.)xiaopeng\.jobs\.feishu\.cn$/] },
+  { company: /\u6587\u8fdc\u77e5\u884c|weride/i, urls: [/app\.mokahr\.com\/(?:campus_apply|apply)\/jingchi\//i, /jobs\.lever\.co\/weride\//i] },
+  { company: /hoyoverse/i, urls: [/jobs\.smartrecruiters\.com\/hoyoverse\//i] },
   { company: /\u4e2d\u82af\u56fd\u9645/, hosts: [/(^|\.)smics\.zhiye\.com$/] },
   { company: /applovin/i, hosts: [/(^|\.)applovin\.com$/] },
   { company: /\u5b81\u5fb7\u65f6\u4ee3/, urls: [/mokahr\.com\/campus-recruitment\/catlhr\//] },
@@ -115,6 +167,7 @@ const OFFICIAL_LINK_POLICIES = [
   { company: /\u5e7f\u7535\u8fd0\u901a/, urls: [/mokahr\.com\/campus-recruitment\/grgbanking\//] },
   { company: /\u664b\u534e\u96c6\u6210\u7535\u8def/, hosts: [/(^|\.)jhicc\.com$/] },
   { company: /\u7ea2\u661f\u7f8e\u51ef\u9f99/, hosts: [/(^|\.)mmall\.com$/] },
+  { company: /\u4eac\u4e1c\u65b9/, hosts: [/(^|\.)boe\.m\.zhiye\.com$/] },
 ];
 
 const COMPANY_NAME_REPLACEMENTS = [
@@ -190,6 +243,22 @@ function canonicalRecruitmentUrl(value) {
   return url.href.replace(/\/$/, "");
 }
 
+function recruitmentTenantKey(value) {
+  const url = parsedHttpUrl(value);
+  if (!url) return "";
+  const host = url.hostname.toLowerCase();
+  if (/\.(?:jobs\.feishu\.cn|zhiye\.com|f\.mioffice\.cn)$/.test(host)) return host;
+  if (host === "app.mokahr.com") {
+    const tenant = url.pathname.match(/\/(?:campus-recruitment|social-recruitment|campus_apply|apply)\/([^/]+)/i)?.[1];
+    if (tenant) return `${host}/${tenant.toLowerCase()}`;
+  }
+  if (host === "wecruit.hotjob.cn") {
+    const tenant = url.pathname.match(/\/(su[a-z0-9]+)/i)?.[1];
+    if (tenant) return `${host}/${tenant.toLowerCase()}`;
+  }
+  return "";
+}
+
 function linkPolicy(company) {
   return OFFICIAL_LINK_POLICIES.find(policy => policy.company.test(text(company)));
 }
@@ -226,6 +295,10 @@ export function validateRadarJobLinks(jobs) {
       }
       return { ...job, applyUrl: "", originalApplyUrl, linkStatus: "mismatch", linkNote: "\u94fe接域名与公司不匹配，已禁止打开" };
     }
+    const knownOwners = OFFICIAL_LINK_POLICIES.filter(candidate => policyMatchesUrl(candidate, originalApplyUrl));
+    if (!policy && knownOwners.length) {
+      return { ...job, applyUrl: "", originalApplyUrl, linkStatus: "mismatch", linkNote: "链接属于其他已知公司的招聘入口，已禁止打开" };
+    }
     if (OPAQUE_LINK_HOSTS.has(parsedHttpUrl(originalApplyUrl).hostname.toLowerCase())) {
       return { ...job, applyUrl: "", originalApplyUrl, linkStatus: "unverified", linkNote: "\u77ed链接无法在打开前确认公司归属，已暂停使用" };
     }
@@ -238,17 +311,28 @@ export function validateRadarJobLinks(jobs) {
   });
 
   const rowsByUrl = new Map();
+  const rowsByTenant = new Map();
   prepared.forEach(job => {
     const key = canonicalRecruitmentUrl(job.applyUrl);
-    if (!key) return;
-    if (!rowsByUrl.has(key)) rowsByUrl.set(key, []);
-    rowsByUrl.get(key).push(job);
+    if (key) {
+      if (!rowsByUrl.has(key)) rowsByUrl.set(key, []);
+      rowsByUrl.get(key).push(job);
+    }
+    const tenantKey = recruitmentTenantKey(job.applyUrl);
+    if (tenantKey) {
+      if (!rowsByTenant.has(tenantKey)) rowsByTenant.set(tenantKey, []);
+      rowsByTenant.get(tenantKey).push(job);
+    }
   });
 
   return prepared.map(job => {
     const key = canonicalRecruitmentUrl(job.applyUrl);
     const relatedRows = key ? rowsByUrl.get(key) || [] : [];
-    if (!key || !hasUnrelatedCompanies(relatedRows)) return job;
+    const tenantKey = recruitmentTenantKey(job.applyUrl);
+    const relatedTenantRows = tenantKey ? rowsByTenant.get(tenantKey) || [] : [];
+    const urlConflict = key && hasUnrelatedCompanies(relatedRows);
+    const tenantConflict = tenantKey && hasUnrelatedCompanies(relatedTenantRows);
+    if (!urlConflict && !tenantConflict) return job;
     const policy = linkPolicy(job.company);
     if (policyMatchesUrl(policy, job.applyUrl)) return job;
     return {
@@ -396,7 +480,21 @@ export async function loadRadarJobs() {
       const raw = payload.jobs;
       if (!Array.isArray(raw) || !raw.length) throw new Error("数据源为空或格式发生变化");
       const jobs = source.id === "xiaozhao-radar" ? raw.map(normalizeXiaozhao) : raw;
-      status.push({ ...source, cadence: payload.updatedAt ? `快照更新：${payload.updatedAt}` : source.cadence, state: "ok", count: jobs.length, checkedAt: new Date().toISOString() });
+      const sourceDetails = Array.isArray(payload.sources) ? payload.sources : [];
+      const successfulDetails = sourceDetails.filter(item => item.state === "ok").length;
+      const failedDetails = sourceDetails.length - successfulDetails;
+      const rejectedLinks = sourceDetails.reduce((sum, item) => sum + (Number(item.rejectedLinks) || 0), 0);
+      const detailSummary = sourceDetails.length
+        ? ` · ${successfulDetails}/${sourceDetails.length} 官网成功${failedDetails ? `，${failedDetails} 家沿用上次结果` : ""}${rejectedLinks ? `，拦截 ${rejectedLinks} 条异常链接` : ""}`
+        : "";
+      status.push({
+        ...source,
+        cadence: payload.updatedAt ? `快照更新：${payload.updatedAt}${detailSummary}` : source.cadence,
+        state: "ok",
+        count: jobs.length,
+        checkedAt: new Date().toISOString(),
+        details: sourceDetails,
+      });
       return jobs;
     } catch (error) {
       status.push({ ...source, state: "error", count: 0, checkedAt: new Date().toISOString(), message: error.message });

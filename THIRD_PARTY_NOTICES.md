@@ -20,6 +20,10 @@
 - https://github.com/jiabaobei/xiaozhao-radar
   - 本地历史快照来源；上游项目标注 Apache-2.0。保留来源和许可证说明；岗位描述的其他权利不因此自动转授。
   - 许可证全文：https://www.apache.org/licenses/LICENSE-2.0
+- https://github.com/HA7CH/job-pro
+  - 定时更新器固定使用 `@ha7ch/job-pro@1.2.1`，只读公开招聘接口，不登录、不填表、不投递。
+  - 上游项目标注 MIT License；工作台只发布标准化的公开岗位事实与官网链接。
+  - 许可证全文：https://github.com/HA7CH/job-pro/blob/main/LICENSE
 - https://github.com/xixicc186/xixicc2027
   - 更新脚本读取公开 jobs.json，输出经过字段标准化及链接校验的快照；不复制其应用代码。
   - 2026-09-07 核对 README：上游提供实时读取 jobs.json 并渲染页面的使用方式；未见明确 LICENSE。保留岗位聚合接入及来源，不把“公开可读”标记为开源许可，也不复制其应用代码。

@@ -11,7 +11,7 @@ export default defineConfig(({ command }) => ({
     name: "publish-active-public-assets",
     apply: "build",
     async closeBundle() {
-      const files = new Set(["assets/wooden-fish-v3.png", "example-question-bank.json", "data/campus-jobs-snapshot.json", "data/radar-updates.json"]);
+      const files = new Set(["assets/wooden-fish-v3.png", "example-question-bank.json", "data/campus-jobs-snapshot.json", "data/radar-updates.json", "data/official-live-jobs.json"]);
       for (const question of SEED_QUESTIONS) {
         for (const image of [question.image, ...(question.images || []), ...(question.optionImages || [])].filter(Boolean)) {
           if (image.startsWith("/question-images/") && !image.includes("..")) files.add(image.slice(1));

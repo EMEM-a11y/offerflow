@@ -33,6 +33,24 @@ test("ByteDance link cannot point to Moonton; javascript links are blocked", () 
   assert.equal(jobs[1].applyUrl,"");
 });
 
+test("known company domains and shared recruitment tenants cannot be assigned to unrelated companies", () => {
+  const jobs = validateRadarJobLinks([
+    { company: "齐心集团", applyUrl: "https://talent.antgroup.com/campus/position/123" },
+    { company: "公司甲", applyUrl: "https://unknown.jobs.feishu.cn/campus/position/111/detail" },
+    { company: "公司乙", applyUrl: "https://unknown.jobs.feishu.cn/campus/position/222/detail" },
+    { company: "京东方", applyUrl: "https://boe.m.zhiye.com/2022/campus2022.html" },
+    { company: "小鹏", applyUrl: "https://xiaopeng.jobs.feishu.cn/campus/position/333/detail" },
+    { company: "智元", applyUrl: "https://agirobot.jobs.feishu.cn/campus/position/444/detail" },
+  ]);
+  assert.equal(jobs[0].linkStatus, "mismatch");
+  assert.equal(jobs[0].applyUrl, "");
+  assert.equal(jobs[1].linkStatus, "conflict");
+  assert.equal(jobs[2].linkStatus, "conflict");
+  assert.equal(jobs[3].linkStatus, "verified");
+  assert.equal(jobs[4].linkStatus, "verified");
+  assert.equal(jobs[5].linkStatus, "verified");
+});
+
 test("updater rejects empty, changed and unexpectedly shrunken sources", () => {
   assert.throws(()=>prepareSnapshot([]));
   assert.throws(()=>prepareSnapshot(Array(20).fill({foo:1})));
