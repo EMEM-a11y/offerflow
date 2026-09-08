@@ -67,7 +67,11 @@ textarea { resize: vertical; }
 .radar-list-panel, .radar-detail-panel { height: 100%; min-height: 0; }
 .radar-pane-title { flex-basis: 48px; min-height: 48px; }
 .radar-list-panel .radar-row { padding: 16px 72px 16px 16px; }
-.radar-row-title { font-size: var(--text-lg); line-height: 1.5; }
+.radar-list-panel .radar-row-top { align-items: flex-start; }
+.radar-list-panel .radar-row-top > strong { font-size: 22px; font-weight: 700; line-height: 1.4; color: var(--ink); overflow-wrap: anywhere; }
+.radar-list-panel .radar-status { flex-shrink: 0; }
+.radar-list-panel .radar-row-title { font-size: var(--text-sm); font-weight: 400; line-height: 1.5; color: var(--muted); }
+.radar-list-panel .radar-role-line { font-weight: 400; }
 .radar-list-panel .radar-role-line, .detail-stage .prompt, .jd-box { font-size: var(--text-base); line-height: 1.75; }
 .radar-detail-panel .detail-stage { overflow: auto; padding: 20px; }
 .radar-detail-panel .detail-actions { position: sticky; bottom: -20px; margin: 20px -20px -20px; padding: 12px 20px; flex-wrap: wrap; }
