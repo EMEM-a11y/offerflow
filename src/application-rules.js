@@ -12,8 +12,8 @@ export const APPLICATION_RULES = [
     evidenceLabel: "官方当届页面",
     quota: "拓疆者校招仅允许投递 1 次；数字管理构建者计划明确不占校招投递次数",
     parallel: "专项不占次数不等于流程一定并行，官网未明确并行安排",
-    retry: "官网未说明未通过后是否返还投递机会",
-    change: "当届公开页面未明确已投岗位的修改规则",
+    retry: "未通过后是否返还名额：未明确",
+    change: "未明确",
     advice: "先选准常规校招岗位；符合条件时可另外查看数字管理构建者计划，不要把专项例外套用到所有岗位。",
     sources: [
       { label: "2027 热招职位与投递说明", url: "https://careers.dji.com/zh-CN/campus/hot-jobs?source=campus_hotjobs" },
@@ -31,8 +31,8 @@ export const APPLICATION_RULES = [
     evidenceLabel: "招聘官网 FAQ",
     quota: "校招可投递 1 个职位，填写简历时可填写第二意向岗位",
     parallel: "第二意向不是第二次独立投递；官网未说明校招两个意向是否并行处理",
-    retry: "官网未明确校招未通过后的重投或冷却期规则",
-    change: "官网未明确校招已投岗位的修改规则",
+    retry: "重投及冷却期：未明确",
+    change: "未明确",
     advice: "官网建议两个意向选择不同职类。FAQ 中“同时投两个职位”的说明属于社招，不能套用到校招。",
     sources: [
       { label: "官方招聘常见问题", url: "https://www.honor.com/cn/career/faq/" }
@@ -48,8 +48,8 @@ export const APPLICATION_RULES = [
     evidence: "official",
     evidenceLabel: "官方 2027 校招 FAQ",
     quota: "最多可投递 2 个职位",
-    parallel: "官方 FAQ 未说明两个职位是否同时推进",
-    retry: "官方 FAQ 未说明未通过后是否返还投递名额",
+    parallel: "未明确",
+    retry: "未通过后是否返还名额：未明确",
     change: "简历提交后不再支持职位更改",
     advice: "提交前确认两个岗位都符合自己的方向；不要先随便投一个，再等后续换岗。",
     sources: [
@@ -79,7 +79,7 @@ export const APPLICATION_RULES = [
     company: "字节跳动",
     aliases: ["字节", "ByteDance"],
     cohort: "2027 届校招",
-    signal: "全年 4 次",
+    signal: "2026、2027 各 2 次",
     evidence: "official",
     evidenceLabel: "官网与公开口径已核验",
     quota: "2026 年可投 2 次，2027 年 1 月 1 日再刷新 2 次",
@@ -103,7 +103,7 @@ export const APPLICATION_RULES = [
     quota: "不限总投递次数",
     parallel: "一次只推进 1 个岗位",
     retry: "当前岗位流程结束后，可以重新投递其他岗位，不限次数",
-    change: "公开材料没有写明流程进行中能否更换岗位",
+    change: "流程中能否改岗：未明确",
     advice: "可以多次尝试，但需要等当前岗位流程结束后再投下一个。",
     sources: [
       { label: "规则出处", url: "https://eie.bjtu.edu.cn/cms/item/5822.html" },
@@ -138,7 +138,7 @@ export const APPLICATION_RULES = [
     evidenceLabel: "招聘官网帮助页",
     quota: "校招最多只能投递 1 个岗位",
     parallel: "没有并行岗位，当前只保留 1 个校招申请",
-    retry: "官网帮助页没有说明流程结束后是否恢复投递机会",
+    retry: "流程结束后是否恢复名额：未明确",
     change: "仅在简历状态为“简历初筛-待处理”时可以更换岗位",
     advice: "投递后尽快检查岗位是否选对，进入下一状态前仍有一次调整窗口。",
     sources: [
@@ -156,7 +156,7 @@ export const APPLICATION_RULES = [
     evidenceLabel: "官方校招 FAQ",
     quota: "每位同学最多投递 2 个岗位",
     parallel: "两个志愿可以同时保留，面试优先安排第一志愿",
-    retry: "公开 FAQ 没有写明未通过后是否返还岗位名额",
+    retry: "未通过后是否返还名额：未明确",
     change: "官网提供调整申请职位和第一志愿的入口，实际可改状态以个人中心为准",
     advice: "第一志愿会影响面试安排，应该放最想去且匹配度最高的岗位。",
     sources: [
@@ -190,9 +190,9 @@ export const APPLICATION_RULES = [
     signal: "项目间不冲突",
     evidence: "mixed",
     evidenceLabel: "校方转发招聘简章",
-    quota: "公开简章没有说明单个招聘项目内的岗位数量上限",
+    quota: "单个招聘项目的岗位上限：未明确",
     parallel: "JD STAR、TGT、JD YOUNG 等不同招聘项目之间互不冲突，均可投递",
-    retry: "公开简章没有说明单个岗位结束后的再次投递规则",
+    retry: "流程结束后能否重投：未明确",
     change: "是否能修改岗位需登录个人中心核对",
     advice: "可以按不同项目分别投递，但单个项目内先确认清楚再占用岗位。",
     sources: [
@@ -228,7 +228,7 @@ export const APPLICATION_RULES = [
     evidenceLabel: "校方转发企业通知",
     quota: "每位同学最多投递 3 个志愿",
     parallel: "LongCat 顶尖人才校招或北斗计划可与常规岗位同时投递",
-    retry: "公开通知未说明单个志愿结束后是否返还名额",
+    retry: "单个志愿结束后是否返还名额：未明确",
     change: "未填写的志愿可后续补充，已提交志愿的修改状态需登录个人中心确认",
     advice: "先填最匹配的志愿，留出余量给后续新放出的岗位。",
     sources: [
@@ -246,7 +246,7 @@ export const APPLICATION_RULES = [
     evidenceLabel: "官网投递须知与当期报道",
     quota: "当期公开口径为每人最多投递 2 个岗位",
     parallel: "同一时间只处理 1 个岗位，系统优先处理最早投递的岗位",
-    retry: "官网未说明流程结束后是否返还投递名额",
+    retry: "流程结束后是否返还名额：未明确",
     change: "岗位提交后不能修改",
     advice: "第一个岗位会先进流程，应把首选放在最前面。",
     sources: [
@@ -264,8 +264,8 @@ export const APPLICATION_RULES = [
     evidenceLabel: "官方 2027 校招指南",
     quota: "每人最多投递 2 个职位",
     parallel: "官网说明会默认优先处理较早投递的职位",
-    retry: "官方指南未说明流程结束后是否返还名额",
-    change: "官方指南未说明已提交职位的修改规则",
+    retry: "流程结束后是否返还名额：未明确",
+    change: "未明确",
     advice: "第一志愿会更早被处理，两次机会要按匹配度排序。",
     sources: [
       { label: "官方校招指南", url: "https://campus.pony.ai/guideline" },
@@ -299,7 +299,7 @@ export const APPLICATION_RULES = [
     evidence: "mixed",
     evidenceLabel: "校方转发企业通知",
     quota: "每人可投递 2 个志愿",
-    parallel: "公开通知未说明两个志愿是否同时推进",
+    parallel: "未明确",
     retry: "如流程结束，企业可能进行岗位调剂",
     change: "2 个志愿提交后无法修改",
     advice: "志愿一旦提交不能换，两个选择都要与简历经历直接匹配。",

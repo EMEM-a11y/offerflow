@@ -796,6 +796,11 @@ button.radar-metric:active { transform: translateY(1px); }
 .source-note a, .review-explanation a { color: var(--accent-ink); font-weight: 700; text-decoration: none; }
 .source-note a:hover, .review-explanation a:hover { text-decoration: underline; }
 .source-note.compact { margin-top: 18px; }
+.copy-help > summary { color: var(--accent-ink); font-size: var(--text-sm); cursor: pointer; }
+.copy-help > summary:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; }
+.copy-help > p { margin: 8px 0 0; line-height: 1.65; }
+.source-note .copy-help { margin-top: 8px; }
+details.rule-advice { min-height: 0; }
 
 .wrong-list { display: grid; gap: 9px; }
 .wrong-card { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 15px; }

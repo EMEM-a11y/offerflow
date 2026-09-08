@@ -31,13 +31,13 @@ test("failed sends permit retry and successful retry clears the error", async ()
   let fail=true;
   const login=createLoginRequest(async()=>{if(fail)throw {code:"email_address_not_authorized"};});
   await login.submit("test@example.com");
-  assert.match(login.state.message,/公众邮件/);
+  assert.match(login.state.message,/邮件服务暂不支持此邮箱/);
   assert.equal(login.state.busy,false);
   assert.equal(login.remaining(),0);
   fail=false;
   await login.submit("test@example.com");
   assert.equal(login.state.success,true);
-  assert.doesNotMatch(login.state.message,/公众邮件/);
+  assert.doesNotMatch(login.state.message,/邮件服务暂不支持此邮箱/);
 });
 
 test("rejected CAPTCHA is not reported as an email success", async () => {

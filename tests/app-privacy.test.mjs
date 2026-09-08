@@ -165,9 +165,11 @@ test("guest email form explains registration and requires privacy consent", t=>{
   const {run}=app(t);
   run('state.modal = "account"');
   const html=run("renderModal()");
-  assert.match(html,/注册 \/ 登录/);
-  assert.match(html,/首次使用此邮箱会创建账号/);
-  assert.match(html,/不注册也能刷题/);
+  assert.match(html,/注册与登录/);
+  assert.match(html,/首次使用将自动创建账号/);
+  assert.match(html,/访客可浏览岗位和练习题目/);
+  assert.match(html,/维护者具备云端管理权限/);
+  assert.match(html,/不随账号跨设备同步/);
   assert.match(html,/name="privacyConsent"[^>]*required/);
 });
 
