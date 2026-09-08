@@ -1864,3 +1864,11 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+@media (max-width: 380px) {
+  .top-actions .cloud-status { display: none; }
+  .crumb { flex-wrap: nowrap; }
+  .crumb strong { white-space: nowrap; }
+  .home-section-head > button { flex-shrink: 0; white-space: nowrap; }
+  .practice-tabs, .resume-tabs { gap: 8px 16px; }
+}
