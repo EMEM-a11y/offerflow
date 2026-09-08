@@ -571,8 +571,8 @@ button.radar-metric:active { transform: translateY(1px); }
 .interview-stage-filters button.active { border-color: rgba(0, 113, 227, .3); background: var(--accent-soft); color: var(--accent-ink); }
 .interview-stage-filters span { font-size: var(--text-xs); font-weight: 650; }
 .interview-stage-filters strong { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0, 0, 0, .055); display: grid; place-items: center; font-size: var(--text-xs); }
-.interview-record-layout { display: grid; grid-template-columns: minmax(300px, .75fr) minmax(0, 1.25fr); gap: 14px; align-items: start; }
-.interview-record-list { max-height: calc(100dvh - 330px); min-height: 520px; padding: 8px; overflow: auto; }
+.interview-record-layout { display: grid; grid-template-columns: minmax(300px, .75fr) minmax(0, 1.25fr); gap: 14px; align-items: stretch; }
+.interview-record-list { contain: size; min-height: 520px; padding: 8px; overflow: auto; }
 .interview-record-list-head { position: sticky; top: -8px; z-index: 2; margin: -8px -8px 4px; padding: 12px 13px; border-bottom: 1px solid var(--line); background: var(--panel-solid); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .interview-record-list-head > div { display: grid; gap: 2px; }
 .interview-record-list-head strong { font-size: var(--text-sm); }
@@ -1529,7 +1529,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   .radar-control-panel .radar-toolbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
   .radar-control-panel .radar-toolbar label { min-width: 0; }
   .interview-record-layout, .review-workbench, .prep-workbench { grid-template-columns: 1fr; }
-  .interview-record-list { max-height: 360px; min-height: 0; }
+  .interview-record-list { contain: none; max-height: 360px; min-height: 0; }
   .review-sidebar { position: static; }
   .recording-box { grid-template-columns: 1fr; }
   .recording-actions { justify-content: flex-start; }

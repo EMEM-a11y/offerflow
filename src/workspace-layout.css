@@ -143,6 +143,7 @@ textarea { resize: vertical; }
 @media (max-width: 1200px) {
   .radar-control-panel .radar-toolbar { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .home-main-grid, .resume-layout, .vault-layout, .draft-layout, .prep-workbench, .review-workbench, .interview-record-layout { grid-template-columns: 1fr; }
+  .interview-record-list { contain: none; max-height: 360px; min-height: 0; }
   .home-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .home-metrics button:nth-child(4) { border-left: 0; }
   .review-sidebar, .draft-sidebar { position: static; }
