@@ -121,6 +121,15 @@ const navItems = [
   ["pipeline", "投", "投递记录"]
 ];
 
+const MAILBOX_PROVIDERS = [
+  { name: "Gmail", description: "Google 邮箱", url: "https://mail.google.com/mail/u/0/#inbox", domains: ["gmail.com", "googlemail.com"] },
+  { name: "QQ 邮箱", description: "QQ 与 Foxmail", url: "https://mail.qq.com/", domains: ["qq.com", "foxmail.com"] },
+  { name: "网易 163", description: "163 邮箱", url: "https://mail.163.com/", domains: ["163.com"] },
+  { name: "网易 126", description: "126 邮箱", url: "https://mail.126.com/", domains: ["126.com"] },
+  { name: "Outlook", description: "Outlook 与 Hotmail", url: "https://outlook.live.com/mail/0/", domains: ["outlook.com", "hotmail.com", "live.com", "msn.com"] },
+  { name: "新浪邮箱", description: "新浪个人邮箱", url: "https://mail.sina.com.cn/", domains: ["sina.com", "sina.cn"] }
+];
+
 const DAILY_ENCOURAGEMENT_STORAGE_KEY = "offerflow-daily-encouragement-v5";
 const DAILY_ENCOURAGEMENT_ENDPOINT = "https://hub.saintic.com/openservice/sentence/rensheng.lizhi.json";
 const DAILY_ENCOURAGEMENT_FALLBACKS = [
@@ -1129,6 +1138,7 @@ function render() {
             <strong>${title}</strong><span>${subtitle}</span>
           </div>
           <div class="top-actions">
+            <button class="btn ghost mailbox-button" data-modal="mailbox">邮箱</button>
             <span class="cloud-status ${cloudSyncStatus === "error" ? "error" : ""}">${cloudStatusLabel()}</span>
             ${cloudUser ? `<button class="btn account-button" data-modal="account">${escapeHtml(state.profile.name || cloudUser.email || "账号与数据")}</button>` : `<button class="btn" data-modal="account">登录同步</button>`}
             ${activeViewLocked ? `<span class="privacy-status">登录后可用</span>` : ""}
@@ -1290,7 +1300,6 @@ function renderHome() {
     <header class="home-intro">
       <div><span>${todayLabel}</span><h1>求职概览</h1></div>
       <div class="home-intro-actions">
-        <a class="btn home-gmail-link" href="https://mail.google.com/mail/" target="_blank" rel="noreferrer">Gmail 邮箱</a>
         <button class="btn" data-modal="quick-add">记录投递</button>
       </div>
     </header>
@@ -2747,7 +2756,23 @@ function syncApplicationFromRecord(record) {
 
 function renderModal() {
   if (!state.modal) return "";
-  if (!hasPrivateAccess() && !["account", "privacy"].includes(state.modal)) state.modal = "account";
+  if (!hasPrivateAccess() && !["account", "privacy", "mailbox"].includes(state.modal)) state.modal = "account";
+  if (state.modal === "mailbox") {
+    const emailDomain = String(cloudUser?.email || state.profile.email || "").split("@")[1]?.toLowerCase() || "";
+    const providers = [...MAILBOX_PROVIDERS].sort((a, b) => Number(b.domains.includes(emailDomain)) - Number(a.domains.includes(emailDomain)));
+    return modalShell("打开邮箱", `
+      <div class="mailbox-picker">
+        <p class="mailbox-intro">选择邮箱服务，将在新标签页打开收件箱。</p>
+        <div class="mailbox-grid">
+          ${providers.map(provider => {
+            const preferred = provider.domains.includes(emailDomain);
+            return `<a class="mailbox-option ${preferred ? "preferred" : ""}" href="${provider.url}" target="_blank" rel="noreferrer"><span><strong>${provider.name}</strong><small>${preferred ? "当前账号邮箱" : provider.description}</small></span><em>打开</em></a>`;
+          }).join("")}
+        </div>
+        <p class="mailbox-note">如果你的邮箱不在列表里，可以直接在浏览器中打开对应邮箱官网。</p>
+      </div>
+    `);
+  }
   if (state.modal === "account") {
     if (!cloudConfigured) {
       return modalShell("登录与云同步", `

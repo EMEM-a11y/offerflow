@@ -144,8 +144,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .home-intro span { display: block; margin-bottom: 3px; color: var(--faint); font-size: 10px; }
 .home-intro h1 { max-width: 680px; margin: 0; font-size: clamp(23px, 2.25vw, 30px); line-height: 1.12; letter-spacing: -.04em; }
 .home-intro-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
-.home-gmail-link { color: var(--ink); text-decoration: none; }
-.home-gmail-link:hover { color: var(--accent-ink); }
+.mailbox-button { color: var(--muted); }
+.mailbox-picker { display: grid; gap: 16px; }
+.mailbox-intro { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.mailbox-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.mailbox-option { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 68px; padding: 13px 14px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); border-radius: var(--radius-small); background: var(--panel-muted); transition: border-color 160ms ease, background 160ms ease, transform 160ms ease; }
+.mailbox-option:hover { border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); background: var(--panel); transform: translateY(-1px); }
+.mailbox-option:active { transform: translateY(0); }
+.mailbox-option.preferred { border-color: color-mix(in srgb, var(--accent) 48%, var(--line)); background: color-mix(in srgb, var(--accent-soft) 54%, var(--panel)); }
+.mailbox-option span { min-width: 0; display: grid; gap: 4px; }
+.mailbox-option strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-option small { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.mailbox-option em { flex: 0 0 auto; color: var(--accent-ink); font-size: 10px; font-style: normal; }
+.mailbox-note { margin: 0; color: var(--faint); font-size: 10px; line-height: 1.6; }
 .home-morale-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
 .daily-encouragement { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 10px 15px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-small); background: color-mix(in srgb, var(--panel) 82%, transparent); }
 .daily-encouragement-label { color: var(--accent-ink); font-size: 10px; font-weight: 700; white-space: nowrap; }
@@ -1582,6 +1593,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
 
 @media (max-width: 620px) {
   .top-actions .btn:not(.primary) { display: none; }
+  .top-actions .btn.mailbox-button { display: inline-flex; }
+  .mailbox-grid { grid-template-columns: 1fr; }
   .crumb span { display: none; }
   .page-heading { align-items: flex-start; flex-direction: column; }
   .page-heading .btn { width: 100%; }
