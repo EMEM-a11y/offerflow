@@ -332,10 +332,10 @@ test("application stage generates one written-test record and result stays linke
   run("synchronizeProcessRecordsFromApplications()");
   assert.equal(run("state.interviewRecords.length"),1);
   run('updateProcessResult(state.interviewRecords[0], "rejected")');
-  assert.equal(run("state.applications[0].status"),"rejected_at_written");
+  assert.equal(run("state.applications[0].status"),"rejected_assessment");
 });
 
-test("detailed stages retain every terminal phase across restore and existing distribution groups", async t => {
+test("legacy terminal phases restore into simple statuses without changing distribution groups", async t => {
   const {run}=app(t);
   await run('applyCloudUser({id:"A"})');
   const stages=run("FUNNEL_STAGES.map(([value])=>value)");
@@ -345,7 +345,7 @@ test("detailed stages retain every terminal phase across restore and existing di
   for (const stage of stages) {
     for (const result of ["rejected", "withdrawn"]) {
       const status=`${result}_at_${stage}`;
-      const selectedStatus=result === "withdrawn" ? "withdrawn" : status;
+      const selectedStatus=result === "withdrawn" ? "withdrawn" : stage === "applied" ? "rejected_resume" : ["assessment","ai_interview","written"].includes(stage) ? "rejected_assessment" : ["interview_1","interview_2","interview_3"].includes(stage) ? "rejected_interview" : "rejected_final";
       assert.equal(run(`normalizeApplicationStatus("${status}")`),selectedStatus);
       assert.equal(run(`restoreState({applications:[{id:"a",status:"${status}"}]}).applications[0].status`),selectedStatus);
       assert.equal(run(`isClosedApplicationStatus("${status}")`),true);
@@ -373,16 +373,19 @@ test("detailed stages retain every terminal phase across restore and existing di
   const withdrawalOptions = run('renderApplicationStageOptions("withdrawn_at_interview_2")');
   assert.equal((withdrawalOptions.match(/>主动放弃<\/option>/g) || []).length,1);
   assert.doesNotMatch(withdrawalOptions,/value="withdrawn_at_/);
+  const rejectionOptions = run('renderApplicationStageOptions("rejected_at_interview_2")');
+  assert.equal((rejectionOptions.match(/<option value="rejected_/g) || []).length,4);
+  assert.doesNotMatch(rejectionOptions,/value="rejected_at_|历史结束状态/);
 });
 
-test("each round keeps precise rejection but uses one withdrawal status in both directions", t => {
+test("each round maps to grouped rejection or withdrawal in both directions", t => {
   const {run}=app(t);
   for (const stage of run("PROCESS_STAGES")) {
     for (const result of ["rejected","withdrawn"]) {
       run(`state=restoreState({jobs:[{id:"j",company:"示例",role:"产品"}],applications:[{id:"a",jobId:"j",status:"${stage}"}]}); synchronizeProcessRecordsFromApplications();`);
       assert.equal(run('stageForProcessRecord(state.interviewRecords[0].round)'),stage);
       run(`updateProcessResult(state.interviewRecords[0],"${result}")`);
-      const endedStatus=result === "withdrawn" ? "withdrawn" : `${result}_at_${stage}`;
+      const endedStatus=result === "withdrawn" ? "withdrawn" : ["assessment","ai_interview","written"].includes(stage) ? "rejected_assessment" : stage === "interview_more" ? "rejected_final" : "rejected_interview";
       assert.equal(run('state.applications[0].status'),endedStatus);
       run(`state.applications[0].status="${stage}"; synchronizeApplicationProcessState(state.applications[0]); updateProcessResult(state.interviewRecords[0],"waiting");`);
       assert.equal(run('state.applications[0].status'),stage);
