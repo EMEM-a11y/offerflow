@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import { inspectCommunityQuestion, loadCommunityQuestionBank } from "../src/community-question-bank.js";
+import { GRAPHIC_REPAIRS } from "../src/community-graphic-review.js";
 import { SEED_QUESTIONS, SUSPENDED_QUESTION_IDS, validateImportedQuestions } from "../src/question-bank.js";
 
 const commit = "df6ef3312ee3fc676b657fc31a683dcc2ab6731e";
@@ -17,9 +18,9 @@ const rows = payload.questions.map(question => {
   const issues = inspectCommunityQuestion(question);
   if (seenIds.has(question.id)) issues.push("duplicate-id");
   seenIds.add(question.id);
-  const id = question.id === "graph-110" ? "community-beisen-graph-110-reviewed-v2" : `community-beisen-${question.id}`;
+  const id = `community-beisen-${question.id}${GRAPHIC_REPAIRS[question.id] ? "-reviewed-v2" : ""}`;
   const active = activeIds.has(id);
-  return { id: question.id, section: question.sectionId, status: active ? "admitted" : "held", issues: active || issues.length ? issues : ["existing-completeness-or-deduplication-rule"], review: question.id === "graph-110" ? "original-stimulus-and-five-option-strip-reviewed" : "not-semantically-certified" };
+  return { id: question.id, section: question.sectionId, status: active ? "admitted" : "held", issues: active || issues.length ? issues : ["existing-completeness-or-deduplication-rule"], review: GRAPHIC_REPAIRS[question.id] ? "original-image-option-repair" : "not-semantically-certified" };
 });
 for (const question of SEED_QUESTIONS) {
   const issues = [];

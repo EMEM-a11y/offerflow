@@ -1,3 +1,5 @@
+import { GRAPHIC_REPAIRS, graphicSourceSignature } from "./community-graphic-review.js";
+
 const REPOSITORY_URL = "https://github.com/minnielv/beisen-quiz";
 const COMMIT = "df6ef3312ee3fc676b657fc31a683dcc2ab6731e";
 const CDN_ROOT = `https://cdn.jsdelivr.net/gh/minnielv/beisen-quiz@${COMMIT}/public/`;
@@ -53,11 +55,25 @@ function answerIndex(question) {
   return Array.isArray(question?.options) ? question.options.findIndex((option) => option?.key === question.answer) : -1;
 }
 
-// Source p328_1 contains FIVE options, top to bottom. The upstream four-way
-// crop merged A+B. Keep the original strip, never infer cuts from pixel gaps.
-const REVIEWED_GRAPH_ID = "graph-110";
+function prepareCommunityQuestion(question) {
+  const repair = GRAPHIC_REPAIRS[question?.id];
+  if (!repair) return question;
+  if (graphicSourceSignature(question) !== repair.signature) return { ...question, reviewMismatch: true };
+  if (repair.layout === "text") return { ...question, optionsAreImages: false };
+  const letters = Array.from({ length: repair.count }, (_, index) => String.fromCharCode(65 + index));
+  const guide = repair.layout === "combined" ? "原图下半部分为选项" : "最后一张完整原图为选项";
+  return {
+    ...question,
+    stem: `${(repair.stem || question.stem).replace(/四个选项/g, "选项")} ${guide}，从上到下依次为 ${letters.join("、")}，请按位置选择。`,
+    images: [...repair.images, repair.strip],
+    optionsAreImages: false,
+    options: letters.map((key, index) => ({ key, text: `${key} · 原图第 ${index + 1} 项` })),
+    explanation: repair.explanation ?? question.explanation,
+  };
+}
 
 export function inspectCommunityQuestion(question) {
+  question = prepareCommunityQuestion(question);
   const issues = [];
   if (!question || typeof question !== "object") return ["invalid-row"];
   if (question.images !== undefined && (!Array.isArray(question.images) || question.images.some(path => typeof path !== "string"))) return ["invalid-images"];
@@ -82,12 +98,12 @@ export function inspectCommunityQuestion(question) {
   if (answerIndex(question) < 0) issues.push("invalid-answer");
   const assets = [...(question.images || []), ...(Array.isArray(options) ? options.map(option => option?.image).filter(Boolean) : [])];
   if (assets.some(path => typeof path !== "string" || !/^images\/[a-zA-Z0-9_\/-]+\.png$/.test(path) || path.includes(".."))) issues.push("invalid-asset-path");
-  if (question.id === REVIEWED_GRAPH_ID && (question.answer !== "A" || question.images?.join() !== "images/graph/p327_4_4882.png" || options?.length !== 4 || options.some((option, index) => option?.image !== `images/graph/options/graph-110_${String.fromCharCode(65 + index)}.png`))) issues.push("reviewed-source-changed");
+  if (question.reviewMismatch) issues.push("reviewed-source-changed");
   if (AUDITED_CONTENT_EXCLUSIONS.has(question.id)) issues.push("known-content-defect");
   if (question.sectionId === "data" && !hasQuestionImage(question)) issues.push("missing-chart");
   if (question.sectionId === "graph" && !hasQuestionImage(question) && !/(不同|特殊)/.test(question.stem || "")) issues.push("missing-stimulus");
   // Page-order allocation and inferred option counts are not source reviews.
-  if (["data", "graph"].includes(question.sectionId) && question.id !== REVIEWED_GRAPH_ID) issues.push("visual-source-review-pending");
+  if (["data", "graph"].includes(question.sectionId) && !GRAPHIC_REPAIRS[question.id]) issues.push("visual-source-review-pending");
   return issues;
 }
 
@@ -122,24 +138,13 @@ function isCompleteCommunityQuestion(question, config, answer) {
 
 function convertQuestion(question) {
   if (inspectCommunityQuestion(question).some(issue => issue !== "visual-source-review-pending")) return null;
+  question = prepareCommunityQuestion(question);
   const config = SECTION_CONFIG[question.sectionId];
   const answer = answerIndex(question);
   if (!isCompleteCommunityQuestion(question, config, answer)) return null;
 
-  if (question.id === REVIEWED_GRAPH_ID) return {
-    id: "community-beisen-graph-110-reviewed-v2",
-    paperId: "community-beisen-bank",
-    source: "社区原图核对 · 原 PDF 第 327–328 页（非北森官方）",
-    sourceUrl: `${REPOSITORY_URL}/tree/${COMMIT}/public/images/graph`,
-    category: "graphic", subtype: "图形推理", difficulty: 3,
-    prompt: "接下来的图形应该是？第二张完整原图从上到下依次为 A、B、C、D、E，请按位置选择。",
-    options: ["A · 原图第 1 项", "B · 原图第 2 项", "C · 原图第 3 项", "D · 原图第 4 项", "E · 原图第 5 项"],
-    images: [assetUrl("images/graph/p327_4_4882.png"), assetUrl("images/graph/p328_1_4892.png")],
-    answer: 0, explanation: question.explanation.replace(/\s+/g, " ").trim(), expectedSeconds: 80,
-  };
-
   return {
-    id: `community-beisen-${question.id}`,
+    id: `community-beisen-${question.id}${GRAPHIC_REPAIRS[question.id] ? "-reviewed-v2" : ""}`,
     paperId: "community-beisen-bank",
     source: "GitHub 社区整理 · minnielv/beisen-quiz（非北森官方）",
     sourceUrl: REPOSITORY_URL,
@@ -148,10 +153,11 @@ function convertQuestion(question) {
     difficulty: 3,
     prompt: question.stem.replace(/\s+/g, " ").trim(),
     options: question.options.map((option) => option.text?.trim() || `选项 ${option.key}`),
-    optionImages: question.options.map((option) => assetUrl(option.image)),
+    optionImages: question.options.some(option => option.image) ? question.options.map((option) => assetUrl(option.image)) : undefined,
     answer,
     explanation: question.explanation?.replace(/\s+/g, " ").trim() || "原社区题库未提供文字解析，请结合正确答案复盘。",
     images: (question.images || []).map(assetUrl).filter(Boolean),
+    originalImageLayout: Boolean(GRAPHIC_REPAIRS[question.id] && GRAPHIC_REPAIRS[question.id].layout !== "text"),
     expectedSeconds: config.expectedSeconds,
   };
 }

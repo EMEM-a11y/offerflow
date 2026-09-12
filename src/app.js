@@ -939,6 +939,15 @@ function questionById(id) {
   return questionBank().find((question) => question.id === id);
 }
 
+// Only new review sessions use corrected versions. Never reinterpret old answers.
+function reviewQuestionById(id) {
+  return questionById(id) || (id.startsWith("community-beisen-") ? questionById(`${id}-reviewed-v2`) : undefined);
+}
+
+function wrongBookQuestions() {
+  return [...new Map(state.wrongQuestionIds.map(reviewQuestionById).filter(Boolean).map(question => [question.id, question])).values()];
+}
+
 function hasWrittenExplanation(question) {
   const explanation = String(question?.explanation || "").trim();
   return Boolean(explanation) && ![
@@ -1485,7 +1494,7 @@ function renderQuestionSource(question) {
 function renderQuestionImages(question) {
   const images = question.images?.length ? question.images : question.image ? [question.image] : [];
   if (!images.length) return "";
-  return `<div class="question-images">${images.map((image, index) => `<a href="${escapeHtml(image.startsWith("/") ? assetUrl(image) : image)}" target="_blank" rel="noopener noreferrer" title="查看完整原图"><img data-question-image="${escapeHtml(question.id)}" class="question-image" src="${escapeHtml(image.startsWith("/") ? assetUrl(image) : image)}" alt="${escapeHtml(question.subtype)}题目图${images.length > 1 ? index + 1 : ""}" loading="eager"></a>`).join("")}</div>`;
+  return `<div class="question-images">${images.map((image, index) => `<a href="${escapeHtml(image.startsWith("/") ? assetUrl(image) : image)}" target="_blank" rel="noopener noreferrer" title="查看完整原图"><img data-question-image="${escapeHtml(question.id)}" class="question-image${question.originalImageLayout ? " original-layout" : ""}" src="${escapeHtml(image.startsWith("/") ? assetUrl(image) : image)}" alt="${escapeHtml(question.subtype)}题目图${images.length > 1 ? index + 1 : ""}" loading="eager"></a>`).join("")}</div>`;
 }
 
 function renderAnswerOption(question, option, optionIndex, selected) {
@@ -1495,10 +1504,11 @@ function renderAnswerOption(question, option, optionIndex, selected) {
 }
 
 function renderWrongBook() {
-  const questions = state.wrongQuestionIds.map(questionById).filter(Boolean);
+  const questions = wrongBookQuestions();
+  const unavailable = state.wrongQuestionIds.filter(id => !reviewQuestionById(id)).length;
   return `
     <section class="practice-section no-top-gap">
-      ${questions.length < state.wrongQuestionIds.length ? `<p role="status">${state.wrongQuestionIds.length - questions.length} 道历史错题暂不可用，记录仍保留，暂不参与重练。</p>` : ""}
+      ${unavailable ? `<p role="status">${unavailable} 道历史错题暂不可用，记录仍保留，暂不参与重练。</p>` : ""}
       <div class="practice-section-head"><div><h2>错题本</h2><p>错题会自动收录。重练答对后仍保留历史记录。</p></div>${questions.length ? `<button class="btn primary" data-start-wrongbook>重练全部</button>` : ""}</div>
       ${questions.length ? `<div class="wrong-list">${questions.map(question => `<article class="wrong-card"><div><span class="tag warning">${categoryById(question.category)?.name || "未分类"}</span><h3>${escapeHtml(question.prompt.slice(0, 42))}${question.prompt.length > 42 ? "…" : ""}</h3><p>${escapeHtml(question.source)}</p></div><div class="wrong-card-actions"><button class="btn small ghost" data-master-wrong="${question.id}">已掌握，移除</button><button class="btn small" data-start-single="${question.id}">再做一次</button></div></article>`).join("")}</div>` : `<div class="large-empty"><strong>还没有错题</strong><p>完成一组训练后，答错的题会自动出现在这里。</p><button class="btn primary" data-start-category="mixed">开始测试</button></div>`}
     </section>
@@ -3479,14 +3489,14 @@ document.addEventListener("click", (event) => {
 
   const wrongBookButton = event.target.closest("[data-start-wrongbook]");
   if (wrongBookButton) {
-    startPractice("错题集中复习", state.wrongQuestionIds, "wrongbook");
+    startPractice("错题集中复习", wrongBookQuestions().map(question => question.id), "wrongbook");
     return;
   }
 
   const masteredWrongButton = event.target.closest("[data-master-wrong]");
   if (masteredWrongButton) {
     const questionId = masteredWrongButton.dataset.masterWrong;
-    state.wrongQuestionIds = state.wrongQuestionIds.filter(id => id !== questionId);
+    state.wrongQuestionIds = state.wrongQuestionIds.filter(id => id !== questionId && reviewQuestionById(id)?.id !== questionId);
     saveState("已从错题本移除，原练习记录仍保留");
     render();
     return;

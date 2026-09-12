@@ -2,19 +2,18 @@
   "sourceCommit": "df6ef3312ee3fc676b657fc31a683dcc2ab6731e",
   "scope": "All bundled and pinned community rows; excludes private imports. Structural checks cover every row, not full semantic certification. Review-pending is informational and does not block practice.",
   "total": 761,
-  "admitted": 636,
-  "held": 125,
+  "admitted": 640,
+  "held": 121,
   "reasons": {
     "known-content-defect": 49,
     "invalid-options": 21,
     "invalid-answer": 21,
     "existing-completeness-or-deduplication-rule": 1,
     "markup-in-stem": 3,
-    "visual-source-review-pending": 403,
+    "visual-source-review-pending": 365,
     "missing-chart": 37,
     "duplicate-options": 2,
-    "missing-stimulus": 13,
-    "missing-option-image": 1,
+    "missing-stimulus": 10,
     "shortened-passage-missing-evidence": 4
   },
   "rows": [
@@ -4700,10 +4699,8 @@
       "id": "graph-5",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-6",
@@ -4781,19 +4778,15 @@
       "id": "graph-14",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-15",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-16",
@@ -4862,10 +4855,8 @@
       "id": "graph-23",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-24",
@@ -4989,19 +4980,15 @@
       "id": "graph-37",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-38",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-39",
@@ -5017,19 +5004,15 @@
       "id": "graph-40",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-41",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-42",
@@ -5072,10 +5055,8 @@
       "id": "graph-46",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-47",
@@ -5099,10 +5080,8 @@
       "id": "graph-49",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-50",
@@ -5117,10 +5096,8 @@
       "id": "graph-51",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-52",
@@ -5153,28 +5130,22 @@
       "id": "graph-55",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-56",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-57",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-58",
@@ -5197,12 +5168,9 @@
     {
       "id": "graph-60",
       "section": "graph",
-      "status": "held",
-      "issues": [
-        "missing-option-image",
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "status": "admitted",
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-61",
@@ -5217,28 +5185,22 @@
       "id": "graph-62",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-63",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-64",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-65",
@@ -5280,10 +5242,8 @@
       "id": "graph-69",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-70",
@@ -5298,29 +5258,22 @@
       "id": "graph-71",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-72",
       "section": "graph",
-      "status": "held",
-      "issues": [
-        "missing-stimulus",
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "status": "admitted",
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-73",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-74",
@@ -5335,10 +5288,8 @@
       "id": "graph-75",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-76",
@@ -5353,10 +5304,8 @@
       "id": "graph-77",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-78",
@@ -5371,10 +5320,8 @@
       "id": "graph-79",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-80",
@@ -5399,10 +5346,8 @@
       "id": "graph-82",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-83",
@@ -5427,19 +5372,15 @@
       "id": "graph-85",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-86",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-87",
@@ -5589,19 +5530,15 @@
       "id": "graph-103",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-104",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-105",
@@ -5653,16 +5590,14 @@
       "section": "graph",
       "status": "admitted",
       "issues": [],
-      "review": "original-stimulus-and-five-option-strip-reviewed"
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-111",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-112",
@@ -5776,10 +5711,8 @@
       "id": "graph-124",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-125",
@@ -5813,10 +5746,8 @@
       "id": "graph-128",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-129",
@@ -5905,10 +5836,8 @@
       "id": "graph-138",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-139",
@@ -5961,10 +5890,8 @@
       "id": "graph-144",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-145",
@@ -5979,10 +5906,8 @@
       "id": "graph-146",
       "section": "graph",
       "status": "admitted",
-      "issues": [
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-147",
@@ -6015,12 +5940,9 @@
     {
       "id": "graph-150",
       "section": "graph",
-      "status": "held",
-      "issues": [
-        "missing-stimulus",
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "status": "admitted",
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "graph-151",
@@ -6035,12 +5957,9 @@
     {
       "id": "graph-152",
       "section": "graph",
-      "status": "held",
-      "issues": [
-        "missing-stimulus",
-        "visual-source-review-pending"
-      ],
-      "review": "not-semantically-certified"
+      "status": "admitted",
+      "issues": [],
+      "review": "original-image-option-repair"
     },
     {
       "id": "official-hubei-2026-v-01",

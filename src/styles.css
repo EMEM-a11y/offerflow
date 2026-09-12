@@ -826,6 +826,7 @@ details.rule-advice { min-height: 0; }
 .question-number { color: var(--accent-ink); font-size: var(--text-sm); font-weight: 700; margin-top: 24px; }
 .question-prompt { font-size: var(--text-lg); line-height: 1.85; margin: 10px 0 20px; max-width: 76ch; white-space: pre-line; }
 .question-images { display: grid; gap: 10px; margin: 14px 0 18px; }
+.question-image.original-layout { width: auto; max-width: 100%; max-height: none; }
 .question-image { display: block; width: min(100%, 760px); max-height: 440px; object-fit: contain; object-position: left center; border: 1px solid var(--line); border-radius: 10px; background: #f5f4f0; }
 .exam-options { margin-top: 12px; }
 .exam-options .option { min-height: 48px; align-items: center; }

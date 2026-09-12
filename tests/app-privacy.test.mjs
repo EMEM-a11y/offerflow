@@ -58,6 +58,18 @@ test("broken image questions are skipped for this visit without erasing attempts
   assert.match(run("renderQuestionImages(SEED_QUESTIONS.find(q=>q.id==='jd2-n-01'))"), /data-question-image="jd2-n-01"/);
 });
 
+test("old wrong-book entries reopen repaired questions without remapping historical answers", t => {
+  const { run } = app(t);
+  run(`communityQuestions=[{...SEED_QUESTIONS[0],id:'community-beisen-graph-5-reviewed-v2'}];
+    state.wrongQuestionIds=['community-beisen-graph-5','community-beisen-graph-5-reviewed-v2'];
+    state.practiceHistory=[{results:[{questionId:'community-beisen-graph-5',selected:1,correct:false}]}];`);
+  assert.equal(run("wrongBookQuestions().length"), 1);
+  assert.match(run("renderWrongBook()"), /data-start-single="community-beisen-graph-5-reviewed-v2"/);
+  assert.doesNotMatch(run("renderWrongBook()"), /历史错题暂不可用/);
+  assert.equal(run("questionById('community-beisen-graph-5')"), undefined);
+  assert.equal(run("state.practiceHistory[0].results[0].questionId"), "community-beisen-graph-5");
+});
+
 test("sidebar toggles for guests without rerendering or cloud writes and restores browser preference", t => {
   const storage = new Map();
   const handlers = {};

@@ -1,0 +1,1222 @@
+{
+  "sourceCommit": "df6ef3312ee3fc676b657fc31a683dcc2ab6731e",
+  "scope": "All 152 graph records: 151 original option images located by read-only pixel comparison and visually counted; graph-60 has verified text choices. This certifies displayed option counts, not all answer reasoning.",
+  "rows": [
+    {
+      "id": "graph-1",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p266_1_4102.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-2",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p266_3_4104.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-3",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p267_1_4120.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-4",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p267_3_4122.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-5",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p268_1_4133.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-6",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p268_3_4135.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-7",
+      "optionCount": 5,
+      "originalOptionCount": 5,
+      "strip": "images/graph/p269_1_4146.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-8",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p269_2_4147.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-9",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p270_1_4158.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-10",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p270_3_4160.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-11",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p271_1_4171.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-12",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p271_3_4173.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-13",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p272_1_4184.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-14",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p272_2_4185.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-15",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p273_1_4196.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-16",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p273_3_4198.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-17",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p274_1_4209.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-18",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p274_3_4211.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-19",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p275_1_4222.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-20",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p275_2_4223.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-21",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p276_1_4234.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-22",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p276_3_4236.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-23",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p277_2_4258.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-24",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p278_1_4269.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-25",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p278_3_4271.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-26",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p279_1_4281.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-27",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p279_3_4283.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-28",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p280_1_4294.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-29",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p280_2_4295.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-30",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p281_1_4306.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-31",
+      "optionCount": 5,
+      "originalOptionCount": 5,
+      "strip": "images/graph/p281_2_4307.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-32",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p282_1_4318.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-33",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p282_3_4320.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-34",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p283_2_4331.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-35",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p283_3_4332.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-36",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p284_2_4343.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-37",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p285_1_4354.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-38",
+      "optionCount": 3,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p285_3_4356.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-39",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p286_1_4366.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-40",
+      "optionCount": 3,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p286_3_4368.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-41",
+      "optionCount": 3,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p287_2_4384.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-42",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p287_4_4386.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-43",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p288_2_4397.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-44",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p289_1_4408.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-45",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p290_1_4419.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-46",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p290_2_4420.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-47",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p291_2_4431.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-48",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p292_1_4442.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-49",
+      "optionCount": 3,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p292_3_4444.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-50",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p293_2_4455.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-51",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p294_1_4466.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-52",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p295_1_4477.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-53",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p295_2_4478.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-54",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p296_1_4489.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-55",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p296_3_4491.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-56",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p297_1_4501.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-57",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p298_1_4512.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-58",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p298_2_4513.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-59",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p299_2_4524.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-60",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": null,
+      "review": "text-options-verified-against-stimulus",
+      "action": "repair"
+    },
+    {
+      "id": "graph-61",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p300_1_4535.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-62",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p300_3_4537.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-63",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p301_2_4548.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-64",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p301_3_4549.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-65",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p302_2_4560.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-66",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p303_1_4571.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-67",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p303_2_4572.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-68",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p304_1_4583.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-69",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p304_3_4585.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-70",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p305_1_4595.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-71",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p306_1_4606.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-72",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p306_2_4607.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-73",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p307_2_4618.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-74",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p307_4_4620.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-75",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p308_2_4631.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-76",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p308_4_4633.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-77",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p309_2_4644.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-78",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p310_1_4654.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-79",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p310_3_4656.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-80",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p311_1_4666.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-81",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p311_3_4668.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-82",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p312_1_4679.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-83",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p312_2_4680.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-84",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p313_1_4691.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-85",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p313_2_4692.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-86",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p314_1_4702.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-87",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p315_1_4713.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-88",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p315_3_4715.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-89",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p316_2_4726.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-90",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p316_3_4727.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-91",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p317_2_4738.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-92",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p317_4_4740.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-93",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p318_2_4751.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-94",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p318_4_4753.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-95",
+      "optionCount": 5,
+      "originalOptionCount": 5,
+      "strip": "images/graph/p319_2_4764.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-96",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p320_1_4775.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-97",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p320_3_4777.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-98",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p321_1_4787.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-99",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p321_2_4788.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-100",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p322_1_4799.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-101",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p323_1_4810.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-102",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p323_3_4812.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-103",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p324_2_4823.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-104",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p325_1_4844.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-105",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p325_3_4846.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-106",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p326_1_4857.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-107",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p326_2_4858.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-108",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p327_1_4879.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-109",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p327_3_4881.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-110",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p328_1_4892.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-111",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p328_3_4894.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-112",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p329_2_4905.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-113",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p329_3_4906.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-114",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p330_2_4917.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-115",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p331_1_4928.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-116",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p331_3_4930.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-117",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p332_2_4941.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-118",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p332_4_4943.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-119",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p333_2_4954.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-120",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p334_1_4965.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-121",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p335_1_4981.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-122",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p335_3_4983.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-123",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p336_2_5004.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-124",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p337_1_5014.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-125",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p338_1_5025.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-126",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p338_3_5027.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-127",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p339_1_5037.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-128",
+      "optionCount": 5,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p339_3_5039.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-129",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p340_2_5050.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-130",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p341_1_5060.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-131",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p341_3_5062.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-132",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p342_1_5073.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-133",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p342_3_5075.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-134",
+      "optionCount": 5,
+      "originalOptionCount": 5,
+      "strip": "images/graph/p343_1_5085.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-135",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p343_3_5087.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-136",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p344_1_5098.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-137",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p344_3_5100.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-138",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p345_2_5112.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-139",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p345_4_5114.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-140",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p346_1_5124.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-141",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p346_3_5126.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-142",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p347_2_5137.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-143",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p347_3_5138.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-144",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p348_3_5150.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-145",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p349_2_5161.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-146",
+      "optionCount": 3,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p350_1_5172.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-147",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p350_3_5174.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-148",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p351_2_5190.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-149",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p351_3_5191.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-150",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p352_1_5206.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    },
+    {
+      "id": "graph-151",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p352_2_5207.png",
+      "review": "option-strip-visually-counted",
+      "action": "unchanged"
+    },
+    {
+      "id": "graph-152",
+      "optionCount": 4,
+      "originalOptionCount": 4,
+      "strip": "images/graph/p353_1_5217.png",
+      "review": "option-strip-visually-counted",
+      "action": "repair"
+    }
+  ]
+}
