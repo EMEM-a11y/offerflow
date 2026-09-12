@@ -289,6 +289,9 @@ textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
 .toolbar select { width: auto; min-width: 120px; }
 
 .heading-actions { display: flex; gap: 8px; }
+.interview-heading .heading-actions { flex-wrap: wrap; }
+.interview-heading [data-interview-scope] { width: auto; min-width: 110px; }
+.interview-record-detail > .field { margin-top: 12px; }
 .job-tabs { margin-bottom: 18px; }
 .radar-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
 .radar-metric { min-height: 98px; padding: 16px 18px; border: 0; background: var(--panel); color: var(--ink); display: grid; align-content: space-between; text-align: left; font: inherit; }

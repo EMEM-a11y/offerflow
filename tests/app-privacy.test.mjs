@@ -446,6 +446,228 @@ test("each round maps to grouped rejection or withdrawal in both directions", t 
   assert.equal(run('stageForProcessRecord("AI笔试")'),"written");
 });
 
+function linkedWorkflow(t, overrides = {}) {
+  const instance = app(t, overrides);
+  instance.run(`state=restoreState({
+    profile:{name:"测试用户"},
+    jobs:[{id:"growth",company:"示例公司",role:"增长平台"},{id:"other",company:"示例公司",role:"另一岗位"}],
+    applications:[{id:"a",jobId:"growth",status:"interview_1"},{id:"b",jobId:"other",status:"written"}]
+  }); synchronizeProcessRecordsFromApplications();
+  var application=state.applications[0]; var first=currentProcessRecord(application);
+  first.date="2026-01-01T10:00"; first.questions=["保留的问题"]; first.recording={name:"保留录音.mp3"};`);
+  return instance;
+}
+
+test("archive and restore affect all linked rounds, scope counts and reminders, not another role", t => {
+  const { run } = linkedWorkflow(t);
+  run('updateProcessResult(first,"passed"); application.status="interview_2"; synchronizeApplicationProcessState(application); var second=currentProcessRecord(application); second.date="2026-01-02T10:00";');
+  assert.equal(run('interviewRecordsInScope("active").length'),3);
+  assert.equal(run('workspaceReminders().some(item=>item.interviewRecordId===second.id)'),true);
+  run('application.archivedAt="2026-01-03";');
+  assert.equal(run('interviewRecordsInScope("active").length'),1);
+  assert.equal(run('interviewRecordsInScope("archived").length'),2);
+  assert.equal(run('interviewRecordsInScope("all").length'),3);
+  assert.equal(run('workspaceReminders().some(item=>[first.id,second.id].includes(item.interviewRecordId))'),false);
+  assert.equal(run('first.questions[0]'),"保留的问题");
+  assert.equal(run('first.recording.name'),"保留录音.mp3");
+  run('application.archivedAt="";');
+  assert.equal(run('interviewRecordsInScope("active").length'),3);
+  assert.equal(run('workspaceReminders().some(item=>item.interviewRecordId===second.id)'),true);
+  assert.equal(run('first.result'),"passed");
+});
+
+test("older rounds and archived or ended records cannot roll back, end or reopen a current application", t => {
+  const { run } = linkedWorkflow(t);
+  run('application.status="interview_2"; synchronizeApplicationProcessState(application); var second=currentProcessRecord(application); var snapshot=JSON.stringify(application);');
+  for (const result of ["pending","waiting","passed","rejected","withdrawn","offer"]) {
+    run(`updateProcessResult(first,"${result}");`);
+    assert.equal(run('JSON.stringify(application)'),run('snapshot'));
+  }
+  for (const status of ["interview_2","salary","offer_intent","offer","withdrawn","rejected_interview"]) {
+    run(`application.status="${status}"; application.archivedAt="2026-01-03"; snapshot=JSON.stringify(application);`);
+    run('updateProcessResult(second,"pending");');
+    assert.equal(run('JSON.stringify(application)'),run('snapshot'));
+  }
+  run('application.archivedAt=""; application.status="rejected_interview"; snapshot=JSON.stringify(application); updateProcessResult(second,"waiting"); synchronizeProcessRecordsFromApplications();');
+  assert.equal(run('JSON.stringify(application)'),run('snapshot'));
+  assert.equal(run('second.result'),"waiting", "reload does not overwrite a deliberate historical correction");
+});
+
+test("only the current round is actionable; rejection, withdrawal, offer and missing parents stop reminders", t => {
+  const { run } = linkedWorkflow(t);
+  run('application.status="interview_2"; synchronizeApplicationProcessState(application); var second=currentProcessRecord(application); second.date="2026-01-02";');
+  assert.equal(run('isActionableProcessRecord(first)'),false);
+  assert.equal(run('interviewStatusLabel(first)'),"历史安排");
+  assert.equal(run('isActionableProcessRecord(second)'),true);
+  for (const status of ["salary","offer_intent","offer","withdrawn","rejected_interview","rejected_final"]) {
+    run(`application.status="${status}";`);
+    assert.equal(run('workspaceReminders().some(item=>item.interviewRecordId===second.id)'),false);
+  }
+  run('state.applications=state.applications.filter(app=>app.id!=="a");');
+  assert.equal(run('isInterviewArchived(second)'),true);
+  assert.equal(run('isActionableProcessRecord(second)'),false);
+});
+
+test("legacy matching requires a unique company and role; explicit IDs outrank conflicting pointers", t => {
+  const { run } = linkedWorkflow(t);
+  run('var legacy={id:"legacy",company:"示例公司",role:"增长平台",round:"二面"};');
+  assert.equal(run('applicationForInterviewRecord(legacy)?.id'),"a");
+  run('state.applications.push({id:"same-role-again",jobId:"growth",status:"applied"});');
+  assert.equal(run('applicationForInterviewRecord(legacy)'),null);
+  run('legacy.applicationId="b"; application.interviewRecordId="legacy";');
+  assert.equal(run('applicationForInterviewRecord(legacy)?.id'),"b");
+  run('legacy.applicationId="missing";');
+  assert.equal(run('applicationForInterviewRecord(legacy)'),null);
+});
+
+test("manual linking follows the chosen job but does not alter its stage; explicit unlink survives reload", t => {
+  const { run } = linkedWorkflow(t);
+  run('linkInterviewRecord(first,"b");');
+  assert.equal(run('first.role'),"另一岗位");
+  assert.equal(run('state.applications[1].status'),"written");
+  assert.equal(run('application.interviewRecordId'),"");
+  run('linkInterviewRecord(first,""); synchronizeProcessRecordsFromApplications();');
+  assert.equal(run('applicationForInterviewRecord(first)'),null);
+  assert.equal(run('first.recording.name'),"保留录音.mp3");
+  assert.throws(()=>run('linkInterviewRecord(first,"not-found")'),/已不存在/);
+});
+
+test("manual scheduling fills an empty generated placeholder and preserves existing content", t => {
+  const { run } = linkedWorkflow(t);
+  run('var draft={id:"new",applicationId:"b",company:"错误公司",role:"错误岗位",round:"笔试",status:"scheduled",result:"pending",date:"2026-01-02T10:00",questions:[]}; var originalId=state.applications[1].interviewRecordId; var saved=addInterviewRecord(draft);');
+  assert.equal(run('saved.id'),run('originalId'));
+  assert.equal(run('saved.company'),"示例公司");
+  assert.equal(run('saved.role'),"另一岗位");
+  assert.equal(run('state.interviewRecords.length'),2);
+  run('saved.questions=["已有笔试复盘"]; addInterviewRecord({...draft,id:"another",date:"2026-01-03T10:00"});');
+  assert.equal(run('state.interviewRecords.length'),3);
+  assert.equal(run('saved.questions[0]'),"已有笔试复盘");
+  assert.equal(run('first.recording.name'),"保留录音.mp3");
+  run('var solo=addInterviewRecord({...draft,id:"solo",applicationId:"",company:"示例公司",role:"增长平台"});');
+  assert.equal(run('applicationForInterviewRecord(solo)'),null);
+});
+
+test("deleting an archived application preserves and archives every round without resurrecting deadlines", t => {
+  const { run } = linkedWorkflow(t);
+  run('application.status="interview_2"; synchronizeApplicationProcessState(application); var second=currentProcessRecord(application); second.date="2026-01-02"; state.jobs[0].deadline=localDateKey();');
+  run('removeApplication("a");');
+  assert.equal(run('state.applications.length'),2,"only archived applications can be deleted");
+  run('application.archivedAt="2026-01-03"; removeApplication("a"); synchronizeProcessRecordsFromApplications();');
+  assert.equal(run('state.applications.length'),1);
+  assert.equal(run('interviewRecordsInScope("archived").length'),2);
+  assert.equal(run('applicationForInterviewRecord(first)'),null);
+  assert.equal(run('first.recording.name'),"保留录音.mp3");
+  assert.equal(run('workspaceReminders().some(item=>["interview-"+first.id,"interview-"+second.id,"deadline-growth"].includes(item.id))'),false);
+});
+
+test("creating a later interview advances an active application, while backfills and closed applications stay put", t => {
+  const { run } = linkedWorkflow(t);
+  run('var second=addInterviewRecord({id:"second",applicationId:"a",round:"二面",date:"2026-01-02",status:"scheduled",result:"pending",questions:[],nextActions:"准备二面"});');
+  assert.equal(run('application.status'),"interview_2");
+  assert.equal(run('currentProcessRecord(application).id'),"second");
+  assert.equal(run('isActionableProcessRecord(first)'),false);
+  run('addInterviewRecord({id:"backfill",applicationId:"a",round:"一面",date:"2026-01-01",status:"completed",result:"passed",questions:[]});');
+  assert.equal(run('application.status'),"interview_2");
+  assert.equal(run('currentProcessRecord(application).id'),"second");
+  run('application.status="withdrawn"; addInterviewRecord({id:"third",applicationId:"a",round:"三面",date:"2026-01-03",status:"scheduled",result:"pending",questions:[]});');
+  assert.equal(run('application.status'),"withdrawn");
+  assert.equal(run('workspaceReminders().some(item=>item.interviewRecordId==="third")'),false);
+});
+
+test("interview metrics and home badges follow the same scope and actionable rules", async t => {
+  const { run } = linkedWorkflow(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.profile.name="测试"; state.jobs=[{id:"j",company:"示例",role:"产品"}]; state.applications=[{id:"a",jobId:"j",status:"interview_1"}]; synchronizeProcessRecordsFromApplications(); state.applications[0].archivedAt="2026-01-03";');
+  assert.match(run('renderInterview()'),/data-interview-status-filter="scheduled"><span>待进行<\/span><strong>0<\/strong>/);
+  assert.match(run('renderHome()'),/0 场待进行/);
+  run('state.interviewFilters.scope="archived";');
+  assert.match(run('renderInterview()'),/data-interview-status-filter="all"><span>全部环节<\/span><strong>1<\/strong>/);
+  assert.match(run('renderInterview()'),/关联投递 · 已归档/);
+  assert.equal(run('applicationStaticProcessLabel("rejected_final")'),"未通过");
+  assert.equal(run('applicationStaticProcessLabel("withdrawn")'),"主动放弃");
+});
+
+test("explicitly archived standalone records can be recovered without inventing an application", async t => {
+  const handlers={};
+  const { run }=app(t,{document:{addEventListener:(type,handler)=>{handlers[type]=handler;},querySelector:()=>null}});
+  await run('applyCloudUser({id:"A"})');
+  run('state.interviewRecords=[{id:"standalone",company:"示例",role:"产品",round:"一面",result:"pending",status:"scheduled",date:"2026-01-01",questions:[],detachedFromApplication:true}];');
+  const click=()=>handlers.click({target:{closest:selector=>selector==='[data-toggle-record-archive]'?{dataset:{toggleRecordArchive:"standalone"}}:null}});
+  click();
+  assert.equal(run('interviewRecordsInScope("active").length'),0);
+  assert.equal(run('workspaceReminders().length'),0);
+  click();
+  assert.equal(run('interviewRecordsInScope("active").length'),1);
+  assert.equal(run('workspaceReminders().length'),1);
+  assert.equal(run('state.applications.length'),0);
+});
+
+test("AI and other assessment reminders use the event time when set; rescheduling invalidates old acknowledgements", async t => {
+  const { run } = linkedWorkflow(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"j",company:"示例",role:"产品"}]; state.applications=[{id:"a",jobId:"j",status:"ai_interview"}]; synchronizeProcessRecordsFromApplications(); var record=currentProcessRecord(state.applications[0]);');
+  assert.equal(run('workspaceReminders()[0].id'),"missing-a");
+  run('record.date="2026-01-01T10:00";');
+  assert.equal(run('workspaceReminders().length'),1);
+  assert.equal(run('workspaceReminders()[0].interviewRecordId'),run('record.id'));
+  run('setReminderCompleted(workspaceReminders()[0].key,true);');
+  assert.equal(run('workspaceReminders().length'),0);
+  run('record.date="2026-01-02T10:00";');
+  assert.equal(run('workspaceReminders().length'),1);
+  run('updateProcessResult(record,"waiting");');
+  assert.equal(run('workspaceReminders().length'),0);
+});
+
+test("archived records remain exported regardless of filters, including older replaced entries", async t => {
+  let blob;
+  const { run } = linkedWorkflow(t, { Blob, URL:{createObjectURL:value=>{blob=value;return "blob:test";},revokeObjectURL(){}}, document:{addEventListener(){},querySelector:()=>null,createElement:()=>({click(){}})} });
+  run('application.archivedAt="2026-01-03"; first.superseded=true; state.interviewFilters.scope="active";');
+  assert.equal(run('exportInterviewRecordsCsv()'),2);
+  const csv=await blob.text();
+  assert.match(csv,/归档状态/);
+  assert.match(csv,/已归档/);
+  assert.match(csv,/已被后续安排替代/);
+  assert.match(csv,/保留的问题/);
+  assert.match(csv,/保留录音/);
+});
+
+test("archived deep links choose archived scope and home routing uses only active actionable records", async t => {
+  const handlers={};
+  const { run }=linkedWorkflow(t,{requestAnimationFrame(){},window:{addEventListener(){},scrollTo(){}},document:{addEventListener:(type,handler)=>{handlers[type]=handler;},querySelector:()=>null}});
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"j",company:"示例",role:"产品"}]; state.applications=[{id:"a",jobId:"j",status:"interview_1"}]; synchronizeProcessRecordsFromApplications(); var record=currentProcessRecord(state.applications[0]); state.applications[0].archivedAt="2026-01-03";');
+  handlers.click({target:{closest:selector=>selector==='[data-open-interview]'?{dataset:{openInterview:run('record.id')}}:null}});
+  assert.equal(run('state.interviewFilters.scope'),"archived");
+  assert.equal(run('selectedInterviewRecord().id'),run('record.id'));
+  handlers.click({target:{closest:selector=>selector==='[data-home-route]'?{dataset:{homeRoute:"interview"}}:null}});
+  assert.equal(run('state.interviewFilters.scope'),"active");
+  assert.equal(run('interviewRecordsForFilters().length'),0);
+});
+
+test("restored workspaces cannot mutate empty defaults or leak auto-created records across accounts", async t => {
+  const { run } = app(t);
+  await run('applyCloudUser({id:"A"})');
+  run('state.jobs=[{id:"private-job",company:"A的公司",role:"A的岗位"}]; state.applications=[{id:"private-app",jobId:"private-job",status:"interview_1"}]; synchronizeProcessRecordsFromApplications(); state.answerBank.push({answer:"PRIVATE_ANSWER"}); state.radarActivity.savedJobIds.push("PRIVATE_JOB"); state.profile.skills.push("PRIVATE_SKILL");');
+  assert.equal(run('initialState.interviewRecords.length'),0);
+  assert.equal(run('initialState.answerBank.length'),0);
+  assert.equal(run('initialState.radarActivity.savedJobIds.length'),0);
+  assert.equal(run('initialState.profile.skills.length'),0);
+  await run('applyCloudUser(null)');
+  assert.equal(run('state.interviewRecords.length'),0);
+  await run('applyCloudUser({id:"B"})');
+  assert.equal(run('state.interviewRecords.length'),0);
+  run('var snapshot={interviewRecords:[{id:"old",questions:["original"]}]}; var restored=restoreState(snapshot); restored.interviewRecords[0].questions.push("changed");');
+  assert.equal(run('snapshot.interviewRecords[0].questions.length'),1);
+});
+
+test("legacy completed records without a result stay completed and do not generate scheduled reminders", t => {
+  const { run } = app(t);
+  run('state=restoreState({interviewRecords:[{id:"legacy",company:"示例",role:"产品",round:"一面",status:"completed",date:"2026-01-01"}]});');
+  assert.equal(run('state.interviewRecords[0].result'),"waiting");
+  assert.equal(run('processResultLabel(state.interviewRecords[0])'),"已完成，待结果");
+  assert.equal(run('workspaceReminders().length'),0);
+});
+
 test("structured backup import validates format and never pretends to restore attachments",t=>{
   const {run}=app(t);
   assert.throws(()=>run('parseWorkspaceBackup("{}")'));

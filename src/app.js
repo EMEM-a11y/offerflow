@@ -76,7 +76,7 @@ const initialState = {
   interviewView: "records",
   selectedInterviewRecord: "",
   interviewRecords: [],
-  interviewFilters: { stage: "all", status: "all" },
+  interviewFilters: { stage: "all", status: "all", scope: "active" },
   interviewPrep: structuredClone(EMPTY_INTERVIEW_PREP),
   resumeView: "vault",
   resumeDocuments: [],
@@ -281,7 +281,10 @@ function restoreState(saved) {
     resumeDocuments: saved.resumeDocuments || [],
     answerBank: saved.answerBank || initialState.answerBank,
     applicationDrafts: saved.applicationDrafts || [],
-    interviewRecords: saved.interviewRecords || initialState.interviewRecords,
+    interviewRecords: (saved.interviewRecords || []).map(record => {
+      const result = record.result || (record.status === "completed" ? "waiting" : "pending");
+      return { ...record, result, status: result === "pending" ? "scheduled" : "completed" };
+    }),
     interviewFilters: { ...initialState.interviewFilters, ...saved.interviewFilters },
     interviewPrep: { ...initialState.interviewPrep, ...saved.interviewPrep },
     ruleFilters: { ...initialState.ruleFilters, ...saved.ruleFilters },
@@ -321,7 +324,8 @@ function restoreState(saved) {
     restored.radarActivity.lastViewedJobId = "";
     restored.radarActivity.lastViewedAt = "";
   }
-  return restored;
+  // Keep nested defaults and the loaded snapshot isolated from subsequent edits.
+  return structuredClone(restored);
 }
 
 function normalizeApplicationStatus(status) {
@@ -415,15 +419,13 @@ function exportApplicationsCsv() {
       const job = state.jobs.find(item => item.id === app.jobId) || {};
       const currentRecord = currentProcessRecord(app);
       const linkedRecords = (state.interviewRecords || [])
-        .filter(record => !record.superseded && (record.applicationId === app.id || record.id === app.interviewRecordId))
+        .filter(record => applicationForInterviewRecord(record)?.id === app.id)
         .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
       const processSummary = linkedRecords.map(record => {
         const date = record.date ? ` ${record.date}` : "";
         return `${record.round || "笔面环节"}${date}：${processResultLabel(record)}`;
       }).join(" | ");
-      const processState = currentRecord
-        ? processResultLabel(currentRecord)
-        : PROCESS_STAGES.includes(app.status) ? "待进行" : "";
+      const processState = PROCESS_STAGES.includes(app.status) ? processResultLabel(currentRecord) : applicationStaticProcessLabel(app.status);
       return [
         job.company || "",
         job.role || "",
@@ -452,13 +454,12 @@ function exportApplicationsCsv() {
 }
 
 function exportInterviewRecordsCsv() {
-  const headers = ["公司", "岗位", "环节", "日期时间", "记录状态", "环节结果", "时长", "题目 / 问题", "回答与现场记录", "做得好的", "需要改进", "助手复盘结论", "下一步行动", "录音备份提示", "关联投递"];
+  const headers = ["公司", "岗位", "环节", "日期时间", "记录状态", "环节结果", "时长", "题目 / 问题", "回答与现场记录", "做得好的", "需要改进", "助手复盘结论", "下一步行动", "录音备份提示", "关联投递", "归档状态", "历史安排"];
   const rows = (state.interviewRecords || [])
-    .filter(record => !record.superseded)
     .slice()
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
     .map(record => {
-      const application = state.applications.find(app => app.id === record.applicationId || app.interviewRecordId === record.id);
+      const application = applicationForInterviewRecord(record);
       const questions = Array.isArray(record.questions) ? record.questions.join("\n") : String(record.questions || "");
       const recordingNote = record.recording
         ? `有录音：${record.recording.name || "未命名文件"}（录音仅存于当前浏览器，未包含在 CSV 中）`
@@ -468,7 +469,7 @@ function exportInterviewRecordsCsv() {
         record.role || "",
         record.round || "",
         record.date || "",
-        record.status === "scheduled" ? "待进行" : "已完成",
+        interviewStatusLabel(record),
         processResultLabel(record),
         record.duration || "",
         questions,
@@ -478,7 +479,9 @@ function exportInterviewRecordsCsv() {
         record.assistantReview || "",
         record.nextActions || "",
         recordingNote,
-        application ? `${applicationStageLabel(application.status)}${application.appliedAt ? `（${application.appliedAt}）` : ""}` : "未关联"
+        application ? `${applicationStageLabel(application.status)}${application.appliedAt ? `（${application.appliedAt}）` : ""}` : "未关联",
+        isInterviewArchived(record) ? "已归档" : "未归档",
+        record.superseded ? "已被后续安排替代" : ""
       ];
     });
   const csv = `\uFEFF${[headers, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n")}`;
@@ -820,7 +823,7 @@ function workspaceReminders() {
         view: "pipeline",
         priority: daysFromToday(date) <= 0 ? 0 : 2
       });
-    } else if (!date && ["assessment", "written"].includes(app.status) && currentProcessRecord(app)?.status !== "completed") {
+    } else if (!date && ASSESSMENT_STAGES.includes(app.status) && !currentProcessRecord(app)?.date && currentProcessRecord(app)?.status !== "completed") {
       reminders.push({
         id: `missing-${app.id}`,
         applicationId: app.id,
@@ -834,7 +837,7 @@ function workspaceReminders() {
     }
   });
   state.interviewRecords
-    .filter(record => !record.superseded && record.status === "scheduled")
+    .filter(isActionableProcessRecord)
     .forEach(record => {
       const date = parseCalendarDate(record.date);
       if (!date || daysFromToday(date) > 14) return;
@@ -849,7 +852,7 @@ function workspaceReminders() {
       });
     });
   state.jobs
-    .filter(job => !state.applications.some(app => app.jobId === job.id))
+    .filter(job => !job.applicationRemovedAt && !state.applications.some(app => app.jobId === job.id))
     .forEach(job => {
       const date = parseCalendarDate(job.deadline);
       if (!date || daysFromToday(date) < 0 || daysFromToday(date) > 14) return;
@@ -1354,8 +1357,8 @@ function renderHome() {
   const newJobs = (state.radarActivity?.newJobIds || []).filter(id => radarJobIds.has(id)).length;
   const resume = resumeCompleteness();
   const pendingDrafts = (state.applicationDrafts || []).filter(draft => !draft.reviewed).length;
-  const currentProcessRecords = (state.interviewRecords || []).filter(record => !record.superseded);
-  const scheduledProcesses = currentProcessRecords.filter(record => record.status === "scheduled").length;
+  const currentProcessRecords = interviewRecordsInScope("active");
+  const scheduledProcesses = currentProcessRecords.filter(isActionableProcessRecord).length;
   const reviewNeeded = currentProcessRecords.filter(record => record.status === "completed" && !record.improvements && !record.assistantReview).length;
   const todayLabel = new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "long" }).format(new Date());
   return viewWrap("home", `
@@ -1802,6 +1805,7 @@ function preferredRoles(job) {
 
 function radarJobStatus(job) {
   const application = exactRadarApplication(job.id);
+  if (application?.archivedAt) return { label: "已归档", className: "viewed" };
   if (application?.status === "offer") return { label: "已获 Offer", className: "applied" };
   if (application && isClosedApplicationStatus(application.status)) return { label: "已结束", className: "viewed" };
   if (application) return { label: "跟进中", className: "applied" };
@@ -2356,15 +2360,34 @@ function renderResume() {
 }
 
 function synchronizeProcessRecordsFromApplications() {
-  state.applications.forEach(app => synchronizeApplicationProcessState(app));
+  state.interviewRecords.forEach(record => {
+    const application = applicationForInterviewRecord(record);
+    if (application && !record.applicationId) record.applicationId = application.id;
+  });
+  state.applications.forEach(app => synchronizeApplicationProcessState(app, false));
+}
+
+function isInterviewArchived(record) {
+  return Boolean(record.archivedAt || applicationForInterviewRecord(record)?.archivedAt || (record.applicationId && !applicationForInterviewRecord(record)));
+}
+
+function interviewRecordsInScope(scope = "active") {
+  return state.interviewRecords.filter(record => scope !== "active" || !record.superseded)
+    .filter(record => scope === "all" || (scope === "archived" ? isInterviewArchived(record) : !isInterviewArchived(record)));
+}
+
+function isActionableProcessRecord(record) {
+  if (record.superseded || isInterviewArchived(record) || record.status !== "scheduled" || (record.result && record.result !== "pending")) return false;
+  const application = applicationForInterviewRecord(record);
+  return !application || (!isClosedApplicationStatus(application.status) && PROCESS_STAGES.includes(application.status)
+    && currentProcessRecord(application)?.id === record.id && stageForProcessRecord(record.round) === application.status);
 }
 
 function interviewRecordsForFilters(filters = state.interviewFilters || initialState.interviewFilters) {
-  return (state.interviewRecords || [])
-    .filter(record => !record.superseded)
+  return interviewRecordsInScope(filters.scope || "active")
     .filter(record => filters.stage === "all" || stageForProcessRecord(record.round) === filters.stage)
     .filter(record => {
-      if (filters.status === "scheduled") return record.status === "scheduled";
+      if (filters.status === "scheduled") return isActionableProcessRecord(record);
       if (filters.status === "completed") return record.status === "completed";
       if (filters.status === "recording") return Boolean(record.recording);
       return true;
@@ -2374,23 +2397,32 @@ function interviewRecordsForFilters(filters = state.interviewFilters || initialS
 
 function applicationForInterviewRecord(record) {
   if (!record) return null;
-  return state.applications.find(app => app.id === record.applicationId || app.interviewRecordId === record.id) || null;
+  if (record.applicationId) return state.applications.find(app => app.id === record.applicationId) || null;
+  if (record.detachedFromApplication) return null;
+  const pointed = state.applications.filter(app => app.interviewRecordId === record.id);
+  if (pointed.length) return pointed.length === 1 ? pointed[0] : null;
+  const matches = state.applications.filter(app => {
+    const job = state.jobs.find(job => job.id === app.jobId);
+    return job && record.company?.trim() && record.role?.trim()
+      && job.company.trim() === record.company.trim() && job.role.trim() === record.role.trim();
+  });
+  return matches.length === 1 ? matches[0] : null;
 }
 
 function renderInterview() {
   if (!hasPrivateAccess()) return renderPrivacyGate("interview", "OfferFlow 笔面手记");
   const activeTab = state.interviewView || "records";
   const filters = state.interviewFilters || initialState.interviewFilters;
-  const allRecords = (state.interviewRecords || []).filter(record => !record.superseded);
+  const allRecords = interviewRecordsInScope(filters.scope || "active");
   const stageRecords = filters.stage === "all" ? allRecords : allRecords.filter(record => stageForProcessRecord(record.round) === filters.stage);
   const visibleRecords = interviewRecordsForFilters(filters);
   const completed = stageRecords.filter(record => record.status === "completed").length;
-  const scheduled = stageRecords.filter(record => record.status === "scheduled").length;
+  const scheduled = stageRecords.filter(isActionableProcessRecord).length;
   const withRecording = stageRecords.filter(record => record.recording).length;
   return viewWrap("interview", `
     <div class="page-heading interview-heading">
       <div><h1>笔面准备与复盘</h1></div>
-      <div class="heading-actions"><button class="btn" data-action="export-interviews">导出笔面记录</button><button class="btn primary" data-modal="interview-record">添加笔面试</button></div>
+      <div class="heading-actions"><select data-interview-scope aria-label="笔面记录范围">${[["active", "未归档"], ["archived", "已归档"], ["all", "全部记录"]].map(([value, label]) => `<option value="${value}" ${(filters.scope || "active") === value ? "selected" : ""}>${label}</option>`).join("")}</select><button class="btn" data-action="export-interviews">导出笔面记录</button><button class="btn primary" data-modal="interview-record">添加笔面试</button></div>
     </div>
     ${activeTab === "prep" ? "" : `<div class="interview-metrics" aria-label="按状态筛选笔面记录">
       <button class="${filters.status === "all" ? "active" : ""}" data-interview-status-filter="all"><span>${filters.stage === "all" ? "全部环节" : "当前环节"}</span><strong>${stageRecords.length}</strong></button>
@@ -2424,11 +2456,18 @@ function formatInterviewDate(value) {
 }
 
 function interviewStatusLabel(record) {
-  if (record.status === "scheduled") return "待进行";
+  if (record.result === "withdrawn") return "主动放弃";
+  if (record.status === "scheduled") return isActionableProcessRecord(record) ? "待进行" : "历史安排";
   if (record.result === "passed") return "已通过";
   if (record.result === "rejected") return "未通过";
   if (record.result === "offer") return "Offer";
+  if (isClosedApplicationStatus(applicationForInterviewRecord(record)?.status)) return "已完成 · 流程已结束";
   return "已完成，待结果";
+}
+
+function interviewDateInputValue(value) {
+  const date = parseCalendarDate(value);
+  return date ? `${localDateKey(date)}T${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}` : "";
 }
 
 function renderInterviewRecords() {
@@ -2453,18 +2492,20 @@ function renderInterviewRecords() {
       <section class="panel pad interview-record-detail">
         <div class="record-detail-head"><div><span>${escapeHtml(record.round)}</span><h2>${escapeHtml(record.company)} · ${escapeHtml(record.role)}</h2><p>${escapeHtml(formatInterviewDate(record.date))}${record.duration ? ` · ${escapeHtml(record.duration)}` : ""}</p></div><span class="tag ${record.status === "scheduled" ? "warning" : "success"}">${escapeHtml(interviewStatusLabel(record))}</span></div>
         <div class="record-status-editor">
-          <div><strong>环节状态</strong><span>关联投递进度同步更新。</span></div>
+          <div><strong>环节状态</strong><span>${application && !application.archivedAt && !isClosedApplicationStatus(application.status) && currentProcessRecord(application)?.id === record.id && stageForProcessRecord(record.round) === application.status ? "当前环节结果与投递进度同步。" : "历史或独立记录，仅更新本次笔面结果。"}</span></div>
           <select data-record-result="${record.id}" aria-label="${escapeHtml(record.company)}${escapeHtml(record.round)}状态">
             ${PROCESS_RESULT_OPTIONS.map(([value, label]) => `<option value="${value}" ${record.result === value ? "selected" : ""}>${label}</option>`).join("")}
           </select>
         </div>
+        <div class="field"><label for="record-application">关联投递${isInterviewArchived(record) ? " · 已归档" : ""}</label><select id="record-application" data-record-application="${record.id}"><option value="">独立记录（不联动投递）</option>${state.applications.map(app => { const job = state.jobs.find(item => item.id === app.jobId); return job ? `<option value="${app.id}" ${application?.id === app.id ? "selected" : ""}>${escapeHtml(job.company)} · ${escapeHtml(job.role)} · ${applicationStageLabel(app.status)}${app.archivedAt ? " · 已归档" : ""}</option>` : ""; }).join("")}</select></div>
+        <div class="field"><label for="record-date">环节时间</label><input id="record-date" type="datetime-local" data-record-date="${record.id}" value="${interviewDateInputValue(record.date)}"><span class="field-help">用于笔面安排提醒；投递表的提醒日期用于跟进，两者独立。</span></div>
         ${renderInterviewRecording(record)}
         <div class="record-summary-grid">
           <div><span>本次问题</span><strong>${record.questions.length}</strong><p>${record.questions[0] ? escapeHtml(record.questions[0]) : "结束后把遇到的问题整理在复盘记录里"}</p></div>
           <div><span>下一步</span><p>${escapeHtml(record.nextActions || "补充下一步行动")}</p></div>
         </div>
         <div class="review-preview"><span>最近复盘</span><p>${escapeHtml(record.improvements || record.assistantReview || "暂无复盘记录。")}</p></div>
-        <div class="detail-actions">${application ? `<button class="btn" data-open-application="${application.id}">查看对应投递</button>` : ""}<button class="btn" data-interview-tab="prep">查看准备材料</button><button class="btn primary" data-action="review-record" data-record-id="${record.id}">${record.status === "scheduled" ? "预先记录问题" : "进入复盘"}</button></div>
+        <div class="detail-actions">${application ? `<button class="btn" data-open-application="${application.id}">查看对应投递</button>` : `<button class="btn" data-toggle-record-archive="${record.id}">${isInterviewArchived(record) ? "恢复独立记录" : "归档记录"}</button>`}<button class="btn" data-interview-tab="prep">查看准备材料</button><button class="btn primary" data-action="review-record" data-record-id="${record.id}">${record.status === "scheduled" ? "预先记录问题" : "进入复盘"}</button></div>
       </section>
     </div>
   `;
@@ -2628,19 +2669,23 @@ function updateApplicationDetails(applicationId, data) {
   application.updatedAt = new Date().toISOString();
   application.syncStatus = application.feishuRecordId ? "pending_push" : "local_only";
   state.interviewRecords
-    .filter(record => record.applicationId === application.id || record.id === application.interviewRecordId)
+    .filter(record => applicationForInterviewRecord(record)?.id === application.id)
     .forEach(record => { record.company = job.company; record.role = job.role; });
 }
 
 function renderProcessStateCell(app, record, job) {
   if (!PROCESS_STAGES.includes(app.status)) {
-    const label = app.status === "applied" ? "等待筛选" : app.status === "offer" ? "已获 Offer" : REJECTION_STAGES.includes(app.status) ? "未通过" : WITHDRAWN_STAGES.includes(app.status) ? "主动放弃" : "推进中";
+    const label = applicationStaticProcessLabel(app.status);
     return `<span class="process-state-static">${escapeHtml(label)}</span>`;
   }
   const result = record && stageForProcessRecord(record.round) === app.status ? record.result || "pending" : "pending";
   return `<select class="table-select process-result-${result}" data-process-result="${app.id}" aria-label="${escapeHtml(job.company)}环节状态">
     ${PROCESS_RESULT_OPTIONS.map(([value, label]) => `<option value="${value}" ${result === value ? "selected" : ""}>${label}</option>`).join("")}
   </select>`;
+}
+
+function applicationStaticProcessLabel(status) {
+  return status === "applied" ? "等待筛选" : status === "offer" ? "已获 Offer" : REJECTION_STAGES.includes(status) ? "未通过" : WITHDRAWN_STAGES.includes(status) ? "主动放弃" : "推进中";
 }
 
 function formatApplicationUpdate(app) {
@@ -2716,21 +2761,18 @@ function applicationNextAction(status) {
 }
 
 function currentProcessRecord(app) {
-  return (state.interviewRecords || []).find(record => !record.superseded && record.id === app.interviewRecordId)
-    || (state.interviewRecords || [])
-      .filter(record => !record.superseded && record.applicationId === app.id)
-      .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0]
-    || null;
+  const records = state.interviewRecords.filter(record => !record.superseded && applicationForInterviewRecord(record)?.id === app.id)
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const current = records.filter(record => stageForProcessRecord(record.round) === app.status);
+  if (PROCESS_STAGES.includes(app.status)) return current.find(record => record.id === app.interviewRecordId) || current[0] || null;
+  return records.find(record => record.id === app.interviewRecordId) || records[0] || null;
 }
 
 function ensureProcessRecord(app) {
   const job = state.jobs.find(item => item.id === app.jobId);
   const desiredRound = processRoundForStage(app.status);
   if (!job || !desiredRound) return null;
-  let record = (state.interviewRecords || []).find(item => item.applicationId === app.id && stageForProcessRecord(item.round) === app.status);
-  if (!record) {
-    record = (state.interviewRecords || []).find(item => !item.applicationId && item.company === job.company && item.role === job.role && stageForProcessRecord(item.round) === app.status);
-  }
+  let record = currentProcessRecord(app);
   if (!record) {
     record = {
       id: crypto.randomUUID(),
@@ -2760,10 +2802,11 @@ function ensureProcessRecord(app) {
   return record;
 }
 
-function synchronizeApplicationProcessState(app) {
-  const linkedRecords = (state.interviewRecords || []).filter(record => record.applicationId === app.id || record.id === app.interviewRecordId);
-  if (app.status === "withdrawn" || REJECTION_STAGE_OPTIONS.some(([value]) => value === app.status)) {
-    const record = linkedRecords.find(item => item.id === app.interviewRecordId && !item.superseded && ["pending", "waiting"].includes(item.result)
+function synchronizeApplicationProcessState(app, syncResult = true) {
+  if (app.archivedAt) return currentProcessRecord(app);
+  const linkedRecords = state.interviewRecords.filter(record => applicationForInterviewRecord(record)?.id === app.id);
+  if (syncResult && (app.status === "withdrawn" || REJECTION_STAGE_OPTIONS.some(([value]) => value === app.status))) {
+    const record = linkedRecords.find(item => item.id === currentProcessRecord(app)?.id && !item.superseded && ["pending", "waiting"].includes(item.result)
       && (app.status === "withdrawn" || rejectionStatusForRecord(item) === app.status));
     if (record) {
       record.result = app.status === "withdrawn" ? "withdrawn" : "rejected";
@@ -2772,7 +2815,7 @@ function synchronizeApplicationProcessState(app) {
     }
   }
   const ended = /^(rejected|withdrawn)_at_(.+)$/.exec(app.status);
-  if (ended) {
+  if (syncResult && ended) {
     linkedRecords.filter(record => stageForProcessRecord(record.round) === ended[2]).forEach(record => {
       record.result = ended[1];
       record.status = "completed";
@@ -2780,26 +2823,9 @@ function synchronizeApplicationProcessState(app) {
     });
   }
   if (!PROCESS_STAGES.includes(app.status)) {
-    linkedRecords
-      .filter(record => record.status === "scheduled" && record.result === "pending")
-      .forEach(record => {
-        record.superseded = true;
-        record.supersededAt = new Date().toISOString();
-        record.supersededBy = "";
-      });
-    app.interviewRecordId = "";
     return null;
   }
-
-  const record = ensureProcessRecord(app);
-  linkedRecords
-    .filter(item => item.id !== record.id && item.status === "scheduled" && item.result === "pending" && stageForProcessRecord(item.round) !== app.status)
-    .forEach(item => {
-      item.superseded = true;
-      item.supersededAt = new Date().toISOString();
-      item.supersededBy = record.id;
-    });
-  return record;
+  return ensureProcessRecord(app);
 }
 
 function rejectionStatusForStage(stage) {
@@ -2835,22 +2861,68 @@ function updateProcessResult(record, result) {
 }
 
 function syncApplicationFromRecord(record) {
-  const app = state.applications.find(item => item.id === record.applicationId);
-  if (!app) return;
+  const app = applicationForInterviewRecord(record);
+  if (!app || app.archivedAt || record.archivedAt || record.superseded || isClosedApplicationStatus(app.status)) return;
   const recordStage = stageForProcessRecord(record.round);
+  if (app.status !== recordStage || currentProcessRecord(app)?.id !== record.id) return;
+  record.applicationId = app.id;
   if (record.result === "offer") app.status = "offer";
   else if (record.result === "rejected") app.status = rejectionStatusForRecord(record);
   else if (record.result === "withdrawn") app.status = "withdrawn";
-  else {
-    const currentIndex = FUNNEL_STAGES.findIndex(([status]) => status === app.status);
-    const recordIndex = FUNNEL_STAGES.findIndex(([status]) => status === recordStage);
-    if (isClosedApplicationStatus(app.status) || (currentIndex >= 0 && currentIndex <= recordIndex)) app.status = recordStage;
-  }
   app.interviewRecordId = record.id;
   app.next = record.nextActions || applicationNextAction(app.status);
   app.updatedAt = new Date().toISOString();
   app.syncStatus = app.feishuRecordId ? "pending_push" : "local_only";
   synchronizeApplicationProcessState(app);
+}
+
+function linkInterviewRecord(record, applicationId) {
+  const application = state.applications.find(app => app.id === applicationId);
+  if (applicationId && !application) throw new Error("这条投递已不存在，请重新选择。");
+  state.applications.forEach(app => { if (app.interviewRecordId === record.id) app.interviewRecordId = ""; });
+  record.applicationId = applicationId;
+  record.detachedFromApplication = !applicationId;
+  const job = application && state.jobs.find(job => job.id === application.jobId);
+  if (job) { record.company = job.company; record.role = job.role; record.archivedAt = ""; }
+}
+
+function addInterviewRecord(record) {
+  const application = record.applicationId && state.applications.find(app => app.id === record.applicationId);
+  if (record.applicationId && !application) throw new Error("关联投递已不存在，请重新选择。");
+  const job = application && state.jobs.find(job => job.id === application.jobId);
+  const previous = application && currentProcessRecord(application);
+  if (job) { record.company = job.company; record.role = job.role; }
+  record.detachedFromApplication = !application;
+  const existing = application && state.interviewRecords.find(item => item.applicationId === application.id && !item.superseded
+    && stageForProcessRecord(item.round) === stageForProcessRecord(record.round)
+    && item.status === "scheduled" && item.result === "pending" && !item.date && !item.recording
+    && !item.questions?.length && !item.answerNotes && !item.strengths && !item.improvements && !item.assistantReview);
+  if (existing) { Object.assign(existing, { ...record, id: existing.id }); record = existing; }
+  else state.interviewRecords.unshift(record);
+  if (application && !application.archivedAt && !isClosedApplicationStatus(application.status)) {
+    const stage = stageForProcessRecord(record.round);
+    const currentIndex = FUNNEL_STAGES.findIndex(([value]) => value === application.status);
+    const nextIndex = FUNNEL_STAGES.findIndex(([value]) => value === stage);
+    if (nextIndex > currentIndex || (stage === application.status && (!previous || record.id === previous.id || (record.date && record.date > (previous.date || ""))))) {
+      application.status = stage;
+      application.interviewRecordId = record.id;
+    }
+  }
+  syncApplicationFromRecord(record);
+  return record;
+}
+
+function removeApplication(applicationId) {
+  const application = state.applications.find(app => app.id === applicationId);
+  if (!application?.archivedAt) return;
+  state.interviewRecords.filter(record => applicationForInterviewRecord(record)?.id === applicationId).forEach(record => {
+    record.archivedAt = application.archivedAt;
+    record.applicationId = "";
+    record.detachedFromApplication = true;
+  });
+  state.applications = state.applications.filter(app => app.id !== applicationId);
+  const job = state.jobs.find(job => job.id === application.jobId);
+  if (job) job.applicationRemovedAt = new Date().toISOString();
 }
 
 function renderModal() {
@@ -3248,12 +3320,12 @@ document.addEventListener("click", (event) => {
       state.resumeView = (state.applicationDrafts || []).some(draft => !draft.reviewed) ? "drafts" : "vault";
     }
     if (route === "interview") {
-      const records = (state.interviewRecords || []).filter(record => !record.superseded);
-      const hasScheduled = records.some(record => record.status === "scheduled");
+      const records = interviewRecordsInScope("active");
+      const hasScheduled = records.some(isActionableProcessRecord);
       const needsReview = records.some(record => record.status === "completed" && !record.improvements && !record.assistantReview);
       state.activeView = "interview";
       state.interviewView = hasScheduled ? "records" : needsReview ? "review" : "records";
-      state.interviewFilters = { stage: "all", status: hasScheduled ? "scheduled" : needsReview ? "completed" : "all" };
+      state.interviewFilters = { stage: "all", status: hasScheduled ? "scheduled" : needsReview ? "completed" : "all", scope: "active" };
       state.selectedInterviewRecord = interviewRecordsForFilters()[0]?.id || "";
     }
     state.mobileOpen = false;
@@ -3452,7 +3524,7 @@ document.addEventListener("click", (event) => {
 
   const clearInterviewFilters = event.target.closest('[data-action="clear-interview-filters"]');
   if (clearInterviewFilters) {
-    state.interviewFilters = { stage: "all", status: "all" };
+    state.interviewFilters = { stage: "all", status: "all", scope: "all" };
     state.selectedInterviewRecord = interviewRecordsForFilters()[0]?.id || "";
     saveState();
     render();
@@ -3474,7 +3546,8 @@ document.addEventListener("click", (event) => {
     state.activeView = "interview";
     state.interviewView = "records";
     state.selectedInterviewRecord = openInterview.dataset.openInterview;
-    state.interviewFilters = { stage: record ? stageForProcessRecord(record.round) : "all", status: "all" };
+    if (!record) { showToast("这条笔面记录已不存在"); return; }
+    state.interviewFilters = { stage: stageForProcessRecord(record.round), status: "all", scope: isInterviewArchived(record) ? "archived" : record.superseded ? "all" : "active" };
     saveState();
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3715,7 +3788,24 @@ document.addEventListener("click", (event) => {
     if (app) {
       app.archivedAt = new Date().toISOString();
       app.updatedAt = new Date().toISOString();
-      saveState("已归档，可在已归档中恢复");
+      saveState("投递及关联笔面记录已归档，历史内容保留");
+      render();
+    }
+    return;
+  }
+
+  const archiveRecord = event.target.closest("[data-toggle-record-archive]");
+  if (archiveRecord) {
+    if (!requirePrivateAccess()) return;
+    const record = state.interviewRecords.find(record => record.id === archiveRecord.dataset.toggleRecordArchive);
+    if (record && !applicationForInterviewRecord(record)) {
+      const restoring = isInterviewArchived(record);
+      record.archivedAt = restoring ? "" : new Date().toISOString();
+      if (restoring) record.superseded = false;
+      record.applicationId = "";
+      record.detachedFromApplication = true;
+      state.selectedInterviewRecord = "";
+      saveState(restoring ? "已恢复为独立笔面记录" : "笔面记录已归档");
       render();
     }
     return;
@@ -3726,8 +3816,9 @@ document.addEventListener("click", (event) => {
     const app = state.applications.find(item => item.id === restoreButton.dataset.restoreApp);
     if (app) {
       app.archivedAt = "";
+      synchronizeApplicationProcessState(app, false);
       app.updatedAt = new Date().toISOString();
-      saveState("投递记录已恢复");
+      saveState("投递及关联笔面记录已恢复");
       render();
     }
     return;
@@ -3737,10 +3828,8 @@ document.addEventListener("click", (event) => {
   if (removeButton) {
     if (!window.confirm("确认永久删除这条已归档记录吗？")) return;
     const applicationId = removeButton.dataset.removeApp;
-    const linkedRecord = state.interviewRecords.find(record => record.applicationId === applicationId);
-    if (linkedRecord) linkedRecord.applicationId = "";
-    state.applications = state.applications.filter(app => app.id !== applicationId);
-    saveState("已从求职进度中移除");
+    removeApplication(applicationId);
+    saveState("投递已删除；关联笔面历史保留在已归档中");
     render();
     return;
   }
@@ -4008,6 +4097,33 @@ document.addEventListener("change", (event) => {
   const publicInput = event.target.closest("#cloud-login-form") || event.target.matches("[data-question-answer],#radar-role-category,#radar-industry,#radar-batch,#radar-link,#radar-inbox,#radar-sort");
   if (!publicInput && !hasPrivateAccess()) { requirePrivateAccess(); return; }
   const epoch = authEpoch;
+  if (event.target.matches("[data-interview-scope]")) {
+    state.interviewFilters.scope = event.target.value;
+    state.selectedInterviewRecord = interviewRecordsForFilters()[0]?.id || "";
+    saveState();
+    render();
+    return;
+  }
+  if (event.target.matches("[data-record-application]")) {
+    const record = state.interviewRecords.find(record => record.id === event.target.dataset.recordApplication);
+    if (!record) return;
+    try {
+      linkInterviewRecord(record, event.target.value);
+      state.interviewFilters.scope = isInterviewArchived(record) ? "archived" : "active";
+      saveState("关联已更新，未改动投递阶段");
+    } catch (error) { showToast(error.message); }
+    render();
+    return;
+  }
+  if (event.target.matches("[data-record-date]")) {
+    const record = state.interviewRecords.find(record => record.id === event.target.dataset.recordDate);
+    if (record) {
+      record.date = event.target.value;
+      saveState("环节时间和对应提醒已更新");
+      render();
+    }
+    return;
+  }
   if (event.target.matches("[data-reminder-key]")) {
     setReminderCompleted(event.target.dataset.reminderKey, event.target.checked);
     render();
@@ -4415,7 +4531,7 @@ document.addEventListener("submit", async (event) => {
   if (event.target.id === "interview-record-form") {
     const data = Object.fromEntries(new FormData(event.target));
     const result = data.result || "pending";
-    const record = {
+    let record = {
       id: crypto.randomUUID(),
       applicationId: data.applicationId || "",
       company: data.company,
@@ -4434,10 +4550,9 @@ document.addEventListener("submit", async (event) => {
       nextActions: data.nextActions || ""
     };
     if (!record.nextActions) record.nextActions = processNextAction(record);
-    state.interviewRecords.unshift(record);
-    syncApplicationFromRecord(record);
+    try { record = addInterviewRecord(record); } catch (error) { showToast(error.message); return; }
     state.selectedInterviewRecord = record.id;
-    state.interviewFilters = { stage: stageForProcessRecord(record.round), status: "all" };
+    state.interviewFilters = { stage: stageForProcessRecord(record.round), status: "all", scope: isInterviewArchived(record) ? "archived" : "active" };
     state.interviewView = record.status === "completed" ? "review" : "records";
     state.modal = null;
     saveState("面试记录已创建");
