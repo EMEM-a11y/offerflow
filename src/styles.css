@@ -1506,7 +1506,20 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   .radar-list-panel .job-list { scrollbar-color: rgba(255, 255, 255, .18) transparent; }
 }
 
+.btn.sidebar-toggle { width: 44px; padding: 0; flex-shrink: 0; }
+@media (min-width: 901px) {
+  .app-shell.sidebar-collapsed { --sidebar: 72px; }
+  .sidebar-collapsed .sidebar { padding-inline: 10px; }
+  .sidebar-collapsed .brand { justify-content: center; padding-inline: 0; }
+  .sidebar-collapsed .brand-copy,
+  .sidebar-collapsed .nav-label,
+  .sidebar-collapsed .nav-text,
+  .sidebar-collapsed .nav-count { display: none; }
+  .sidebar-collapsed .nav-item { grid-template-columns: 1fr; justify-items: center; padding-inline: 0; }
+}
+
 @media (max-width: 900px) {
+  .btn.sidebar-toggle { display: none; }
   .app-shell { grid-template-columns: 1fr; }
   .sidebar { position: fixed; left: 0; transform: translateX(-100%); width: min(290px, 86vw); transition: transform 200ms ease; box-shadow: 18px 0 50px rgba(0,0,0,.24); }
   .sidebar.open { transform: translateX(0); }

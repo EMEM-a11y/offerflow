@@ -18,6 +18,22 @@ const RESUME_FILE_STORE = "files";
 localStorage.removeItem("offerflow-privacy-v1");
 sessionStorage.removeItem("offerflow-privacy-unlocked");
 
+const SIDEBAR_PREFERENCE_KEY = "offerflow-sidebar-collapsed";
+let sidebarCollapsed = false;
+try { sidebarCollapsed = localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === "true"; } catch {}
+
+function toggleSidebar() {
+  sidebarCollapsed = !sidebarCollapsed;
+  try { localStorage.setItem(SIDEBAR_PREFERENCE_KEY, String(sidebarCollapsed)); } catch {}
+  document.querySelector(".app-shell")?.classList.toggle("sidebar-collapsed", sidebarCollapsed);
+  const button = document.querySelector('[data-action="toggle-sidebar"]');
+  if (button) {
+    button.setAttribute("aria-expanded", String(!sidebarCollapsed));
+    button.setAttribute("aria-label", sidebarCollapsed ? "展开导航栏" : "收起导航栏");
+    button.title = sidebarCollapsed ? "展开导航栏" : "收起导航栏";
+  }
+}
+
 let communityQuestions = [];
 let communityPapers = [];
 let communityBankStatus = "loading";
@@ -1157,16 +1173,16 @@ function render() {
   loginCaptcha.clear();
   const activeViewLocked = isProtectedView(state.activeView) && !hasPrivateAccess();
   document.querySelector("#app").innerHTML = `
-    <div class="app-shell">
-      <aside class="sidebar ${state.mobileOpen ? "open" : ""}" aria-label="主导航">
+    <div class="app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
+      <aside id="main-navigation" class="sidebar ${state.mobileOpen ? "open" : ""}" aria-label="主导航">
         <div class="brand">
           <div class="brand-mark">OF</div>
-          <div><div class="brand-name">OfferFlow</div><div class="brand-sub">你的求职助手</div></div>
+          <div class="brand-copy"><div class="brand-name">OfferFlow</div><div class="brand-sub">你的求职助手</div></div>
         </div>
         <nav class="nav-group">
           <div class="nav-label">工作区</div>
           ${navItems.map(([id, glyph, label]) => `
-            <button class="nav-item ${state.activeView === id ? "active" : ""}" data-view="${id}">
+            <button class="nav-item ${state.activeView === id ? "active" : ""}" data-view="${id}" aria-label="${label}" title="${label}">
               <span class="nav-glyph">${glyph}</span>
               <span class="nav-text">${label}</span>
               ${isProtectedView(id) && !hasPrivateAccess() ? `<span class="nav-count">锁</span>` : id === "pipeline" ? `<span class="nav-count">${state.applications.filter(app => !app.archivedAt).length}</span>` : ""}
@@ -1177,6 +1193,9 @@ function render() {
       <main class="main">
         <header class="topbar">
           <div class="crumb">
+            <button class="btn ghost sidebar-toggle" data-action="toggle-sidebar" aria-controls="main-navigation" aria-expanded="${!sidebarCollapsed}" aria-label="${sidebarCollapsed ? "展开导航栏" : "收起导航栏"}" title="${sidebarCollapsed ? "展开导航栏" : "收起导航栏"}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+            </button>
             <button class="btn ghost mobile-menu" data-action="toggle-menu" aria-label="打开菜单">菜单</button>
             <strong class="workspace-brand">OfferFlow</strong>
           </div>
@@ -3184,6 +3203,15 @@ document.addEventListener("click", (event) => {
   }
   const privateSelector = "[data-toggle-radar-save],[data-hide-radar-job],[data-analyze-radar],[data-diagnose-company],[data-review-company],[data-open-application],[data-open-company-applications],[data-download-document],[data-remove-document],[data-delete-answer],[data-copy-resume-skill]";
   const clickedAction = event.target.closest("[data-action]")?.dataset.action;
+  if (clickedAction === "toggle-sidebar") {
+    toggleSidebar();
+    return;
+  }
+  if (clickedAction === "toggle-menu") {
+    state.mobileOpen = !state.mobileOpen;
+    document.querySelector(".sidebar")?.classList.toggle("open", state.mobileOpen);
+    return;
+  }
   if (clickedAction === "retry-captcha") {
     if (document.querySelector("#privacy-consent")?.checked && !loginRequest.state.busy) loginCaptcha.mount(document.querySelector("#login-captcha"));
     return;
@@ -3753,10 +3781,6 @@ document.addEventListener("click", (event) => {
   }
   if (action === "export-recovery" && workspaceSync.recovery?.state) {
     downloadWorkspaceState(workspaceSync.recovery.state, "恢复副本");
-  }
-  if (action === "toggle-menu") {
-    state.mobileOpen = !state.mobileOpen;
-    render();
   }
   if (action === "cloud-signout") {
     if (workspaceSync.recovery && !window.confirm("还有未同步的恢复副本，请先下载。确认已备份并退出？退出会清理本次会话的恢复副本。")) return;

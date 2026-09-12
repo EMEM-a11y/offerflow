@@ -35,6 +35,55 @@ function app(t, overrides = {}) {
   return { run:code=>vm.runInContext(code,context),writes };
 }
 
+test("sidebar toggles for guests without rerendering or cloud writes and restores browser preference", t => {
+  const storage = new Map();
+  const handlers = {};
+  const attributes = {};
+  const shell = { classList: { toggle: (name, value) => { attributes[name] = value; } } };
+  const button = { setAttribute: (name, value) => { attributes[name] = value; } };
+  const localStorage = { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value), removeItem() {} };
+  const { run, writes } = app(t, {
+    localStorage,
+    document: { addEventListener: (type, handler) => { handlers[type] = handler; }, querySelector: selector => selector === ".app-shell" ? shell : button },
+  });
+  run('render = () => { throw new Error("Sidebar must preserve the current DOM and unsaved inputs"); };');
+  const click = () => handlers.click({ target: { closest: selector => selector === "[data-action]" ? { dataset: { action: "toggle-sidebar" } } : null } });
+  assert.equal(run("sidebarCollapsed"), false);
+  click();
+  assert.equal(attributes["sidebar-collapsed"], true);
+  assert.equal(attributes["aria-expanded"], "false");
+  assert.equal(button.title, "展开导航栏");
+  assert.equal(app(t, { localStorage }).run("sidebarCollapsed"), true);
+  click();
+  assert.equal(attributes["sidebar-collapsed"], false);
+  assert.equal(attributes["aria-label"], "收起导航栏");
+  assert.equal(app(t, { localStorage }).run("sidebarCollapsed"), false);
+  assert.equal(writes.length, 0);
+});
+
+test("sidebar remains usable when preference storage is blocked", t => {
+  const { run } = app(t, { localStorage: { removeItem() {}, getItem() { throw new Error("blocked"); }, setItem() { throw new Error("blocked"); } } });
+  assert.equal(run("sidebarCollapsed"), false);
+  assert.doesNotThrow(() => run("toggleSidebar()"));
+  assert.equal(run("sidebarCollapsed"), true);
+});
+
+test("mobile navigation opens and closes without rerendering the page", t => {
+  const handlers = {};
+  let open = false;
+  const { run } = app(t, { document: {
+    addEventListener: (type, handler) => { handlers[type] = handler; },
+    querySelector: () => ({ classList: { toggle: (name, value) => { assert.equal(name, "open"); open = value; } } }),
+  } });
+  run('render = () => { throw new Error("Do not rerender"); };');
+  const click = () => handlers.click({ target: { closest: selector => selector === "[data-action]" ? { dataset: { action: "toggle-menu" } } : null } });
+  click();
+  assert.equal(open, true);
+  assert.equal(run("state.mobileOpen"), true);
+  click();
+  assert.equal(open, false);
+});
+
 test("pipeline separates company and role and exposes progress links without expanding", async t => {
   const { run } = app(t);
   await run('applyCloudUser({id:"A"})');
