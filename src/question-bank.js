@@ -253,6 +253,23 @@ export function categoryById(id) {
   return PRACTICE_CATEGORIES.find((category) => category.id === id);
 }
 
+// These shortened passages omit evidence needed to distinguish their choices.
+// Retain IDs and stored attempts; do not offer them again pending PDF comparison.
+export const SUSPENDED_QUESTION_IDS = new Set(["jd-supp-09", "jd-supp-17", "jd-supp-21", "jd-supp-27"]);
+
+export function hasValidOptionImages(question) {
+  if (question.images !== undefined && !Array.isArray(question.images)) return false;
+  const stimulus = [question.image, ...(question.images || [])].filter(Boolean);
+  if (stimulus.some(image => typeof image !== "string" || !/^(?:https?:\/\/|\/(?!\/))/.test(image))) return false;
+  const images = question.optionImages;
+  if (images === undefined || (Array.isArray(images) && images.length === 0)) return true;
+  if (!Array.isArray(images) || images.length !== question.options?.length) return false;
+  const present = images.filter(Boolean);
+  if (present.some(image => typeof image !== "string" || !/^(?:https?:\/\/|\/(?!\/))/.test(image))) return false;
+  if (new Set(present).size !== present.length) return false;
+  return images.every((image, index) => image || !/^(?:选项\s*)?[A-F]$/.test(String(question.options[index]).trim()));
+}
+
 export function validateImportedQuestions(raw) {
   const rows = Array.isArray(raw) ? raw : raw?.questions;
   if (!Array.isArray(rows)) throw new Error("文件需要是题目数组，或包含 questions 数组");
@@ -265,12 +282,13 @@ export function validateImportedQuestions(raw) {
     if (/<|>|data-v=/i.test(prompt)) throw new Error(`第 ${index + 1} 题的题干包含未清理的网页标记`);
     const normalizedOptions = options.map((option) => option.replace(/\s+/g, ""));
     if (new Set(normalizedOptions).size !== normalizedOptions.length) throw new Error(`第 ${index + 1} 题存在重复选项`);
-    const answer = Number(question.answer);
+    const answer = question.answer === null || question.answer === "" || question.answer === undefined ? NaN : Number(question.answer);
     if (!Number.isInteger(answer) || answer < 0 || answer >= options.length) {
       throw new Error(`第 ${index + 1} 题答案必须是从 0 开始的选项序号`);
     }
     const images = Array.isArray(question.images) ? question.images.map(String).filter(Boolean) : [];
-    const optionImages = Array.isArray(question.optionImages) ? question.optionImages.map(String) : [];
+    if (!hasValidOptionImages({ ...question, options })) throw new Error(`第 ${index + 1} 题的选项图片缺失、重复或与选项数量不一致`);
+    const optionImages = Array.isArray(question.optionImages) ? question.optionImages.map(image => image || "") : [];
     const hasVisual = Boolean(question.image) || images.length > 0 || optionImages.some(Boolean);
     const compactPrompt = prompt.replace(/\s+/g, "");
     const needsVisual = /(?:\u8bf7)?\u6839\u636e(?:\u4e0b\u5217)?(?:\u56fe\u7247|\u56fe\u8868|\u4e0b\u56fe|\u4e0b\u8868)|\u4e0b\u56fe[\uff0c\u3002:：\u662f\u4e3a\u5c55\u53cd\u6240]|\u4e0b\u8868[\uff0c\u3002:：\u662f\u4e3a\u5c55\u53cd\u6240]|\u56fe\u8868[\uff0c\u3002:：\u6240\u663e]/.test(compactPrompt);

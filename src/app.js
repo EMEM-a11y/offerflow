@@ -1,5 +1,5 @@
 import { captureWorkspaceFocus, syncWorkspaceUi, handleWorkspaceKeydown } from "./workspace-ui.js";
-import { PRACTICE_CATEGORIES, PRACTICE_PAPERS, SEED_QUESTIONS, categoryById, validateImportedQuestions } from "./question-bank.js";
+import { PRACTICE_CATEGORIES, PRACTICE_PAPERS, SEED_QUESTIONS, SUSPENDED_QUESTION_IDS, hasValidOptionImages, categoryById, validateImportedQuestions } from "./question-bank.js";
 import { COMMUNITY_BANK_SOURCE, createCommunityPaper, loadCommunityQuestionBank } from "./community-question-bank.js";
 import { FALLBACK_RADAR_JOBS, INDUSTRY_GROUPS, JOB_REFRESH_WORKFLOW_URL, JOB_ROLE_CATEGORIES, JOB_SOURCES, companyCareerUrl, jobRoleCategories, loadRadarJobs } from "./job-radar.js";
 import { APPLICATION_RULES, APPLICATION_RULES_UPDATED_AT } from "./application-rules.js";
@@ -35,6 +35,7 @@ function toggleSidebar() {
 }
 
 let communityQuestions = [];
+const failedQuestionImageIds = new Set();
 let communityPapers = [];
 let communityBankStatus = "loading";
 
@@ -913,6 +914,8 @@ function workspaceActionAttribute(action) {
 }
 
 function isUsablePracticeQuestion(question) {
+  if (failedQuestionImageIds.has(question?.id)) return false;
+  if (SUSPENDED_QUESTION_IDS.has(question?.id) || !hasValidOptionImages(question || {})) return false;
   const prompt = String(question?.prompt || "").trim();
   const options = Array.isArray(question?.options) ? question.options.map((option) => String(option).trim()) : [];
   if (!prompt || /<|>|data-v=/i.test(prompt) || options.length < 2 || options.some((option) => !option)) return false;
@@ -1399,8 +1402,7 @@ function renderHome() {
 }
 
 function renderPractice() {
-  const sessionAvailable = state.practiceSession?.questionIds?.some((id) => questionById(id));
-  if (state.practiceSession && sessionAvailable) return viewWrap("practice", renderPracticeSession());
+  if (state.practiceSession) return viewWrap("practice", renderPracticeSession());
 
   const requestedTab = state.practiceView || "overview";
   const activeTab = !hasPrivateAccess() && ["wrongbook", "stats"].includes(requestedTab) ? "overview" : requestedTab;
@@ -1483,19 +1485,20 @@ function renderQuestionSource(question) {
 function renderQuestionImages(question) {
   const images = question.images?.length ? question.images : question.image ? [question.image] : [];
   if (!images.length) return "";
-  return `<div class="question-images">${images.map((image, index) => `<img class="question-image" src="${escapeHtml(image.startsWith("/") ? assetUrl(image) : image)}" alt="${escapeHtml(question.subtype)}题目图${images.length > 1 ? index + 1 : ""}" loading="eager">`).join("")}</div>`;
+  return `<div class="question-images">${images.map((image, index) => `<a href="${escapeHtml(image.startsWith("/") ? assetUrl(image) : image)}" target="_blank" rel="noopener noreferrer" title="查看完整原图"><img data-question-image="${escapeHtml(question.id)}" class="question-image" src="${escapeHtml(image.startsWith("/") ? assetUrl(image) : image)}" alt="${escapeHtml(question.subtype)}题目图${images.length > 1 ? index + 1 : ""}" loading="eager"></a>`).join("")}</div>`;
 }
 
 function renderAnswerOption(question, option, optionIndex, selected) {
   const rawImage = question.optionImages?.[optionIndex];
   const image = rawImage?.startsWith("/") ? assetUrl(rawImage) : rawImage;
-  return `<label class="option ${Number(selected) === optionIndex ? "selected" : ""}"><input type="radio" name="exam-answer" value="${optionIndex}" data-question-answer="${question.id}" ${Number(selected) === optionIndex ? "checked" : ""}><span class="option-letter">${String.fromCharCode(65 + optionIndex)}</span><span class="option-content">${image ? `<img class="option-image" src="${escapeHtml(image)}" alt="选项 ${String.fromCharCode(65 + optionIndex)}">` : ""}<span>${escapeHtml(option)}</span></span></label>`;
+  return `<label class="option ${Number(selected) === optionIndex ? "selected" : ""}"><input type="radio" name="exam-answer" value="${optionIndex}" data-question-answer="${question.id}" ${Number(selected) === optionIndex ? "checked" : ""}><span class="option-letter">${String.fromCharCode(65 + optionIndex)}</span><span class="option-content">${image ? `<img data-question-image="${escapeHtml(question.id)}" class="option-image" src="${escapeHtml(image)}" alt="选项 ${String.fromCharCode(65 + optionIndex)}">` : ""}<span>${escapeHtml(option)}</span></span></label>`;
 }
 
 function renderWrongBook() {
   const questions = state.wrongQuestionIds.map(questionById).filter(Boolean);
   return `
     <section class="practice-section no-top-gap">
+      ${questions.length < state.wrongQuestionIds.length ? `<p role="status">${state.wrongQuestionIds.length - questions.length} 道历史错题暂不可用，记录仍保留，暂不参与重练。</p>` : ""}
       <div class="practice-section-head"><div><h2>错题本</h2><p>错题会自动收录。重练答对后仍保留历史记录。</p></div>${questions.length ? `<button class="btn primary" data-start-wrongbook>重练全部</button>` : ""}</div>
       ${questions.length ? `<div class="wrong-list">${questions.map(question => `<article class="wrong-card"><div><span class="tag warning">${categoryById(question.category)?.name || "未分类"}</span><h3>${escapeHtml(question.prompt.slice(0, 42))}${question.prompt.length > 42 ? "…" : ""}</h3><p>${escapeHtml(question.source)}</p></div><div class="wrong-card-actions"><button class="btn small ghost" data-master-wrong="${question.id}">已掌握，移除</button><button class="btn small" data-start-single="${question.id}">再做一次</button></div></article>`).join("")}</div>` : `<div class="large-empty"><strong>还没有错题</strong><p>完成一组训练后，答错的题会自动出现在这里。</p><button class="btn primary" data-start-category="mixed">开始测试</button></div>`}
     </section>
@@ -1531,9 +1534,10 @@ function renderPracticeSession() {
   const index = Math.min(session.index || 0, questions.length - 1);
   const question = questions[index];
   const selected = session.answers?.[question.id];
-  const answeredCount = Object.keys(session.answers || {}).length;
+  const answeredCount = questions.filter(question => Number.isInteger(session.answers?.[question.id])).length;
   return `
     <div class="exam-shell">
+      ${questions.length < session.questionIds.length ? `<p role="status">本组有 ${session.questionIds.length - questions.length} 道题暂不可用，已跳过，不计入本次成绩。历史记录保留。</p>` : ""}
       <header class="exam-header">
         <button class="btn ghost" data-action="exit-practice">退出练习</button>
         <div class="exam-title"><strong>${escapeHtml(session.title)}</strong><span>${answeredCount}/${questions.length} 已作答</span></div>
@@ -3253,6 +3257,14 @@ function modalShell(title, body) {
   return `<div class="modal-backdrop" data-action="backdrop"><div class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-label="${title}"><div class="modal-head"><h2>${title}</h2><button class="close-btn" data-action="close-modal" aria-label="关闭">×</button></div><div class="modal-body">${body}</div></div></div>`;
 }
 
+document.addEventListener("error", (event) => {
+  const id = event.target?.dataset?.questionImage;
+  if (!id || failedQuestionImageIds.has(id)) return;
+  failedQuestionImageIds.add(id);
+  showToast("题目图片加载失败，本次已跳过，不计分；可稍后重新进入重试");
+  render();
+}, true);
+
 document.addEventListener("click", (event) => {
   if (event.target.closest("[data-radar-back]")) {
     closeMobileRadarDetail();
@@ -4013,12 +4025,12 @@ document.addEventListener("click", (event) => {
     render();
   }
   if (action === "next-question" && state.practiceSession) {
-    state.practiceSession.index = Math.min(state.practiceSession.questionIds.length - 1, state.practiceSession.index + 1);
+    state.practiceSession.index = Math.min(state.practiceSession.questionIds.filter(questionById).length - 1, state.practiceSession.index + 1);
     saveState();
     render();
   }
   if (action === "submit-practice") {
-    const unanswered = state.practiceSession.questionIds.length - Object.keys(state.practiceSession.answers || {}).length;
+    const unanswered = state.practiceSession.questionIds.filter(id => questionById(id) && !Number.isInteger(state.practiceSession.answers?.[id])).length;
     if (!unanswered || window.confirm(`还有 ${unanswered} 道题未作答，仍然交卷吗？`)) submitPractice();
   }
   if (action === "review-answers") {

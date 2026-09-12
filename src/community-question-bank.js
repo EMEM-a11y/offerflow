@@ -6,7 +6,7 @@ const DATA_URL = `${CDN_ROOT}data/questions.json`;
 export const COMMUNITY_BANK_SOURCE = {
   title: "北森社区整理题库",
   repositoryUrl: REPOSITORY_URL,
-  note: "GitHub 社区整理，已过滤缺图、残缺和串题数据，非北森官方题库",
+  note: "非北森官方题库；自动检查不等于题源核验，未核对的图片题暂停出题",
 };
 
 const SECTION_CONFIG = {
@@ -50,7 +50,45 @@ function assetUrl(path = "") {
 }
 
 function answerIndex(question) {
-  return question.options.findIndex((option) => option.key === question.answer);
+  return Array.isArray(question?.options) ? question.options.findIndex((option) => option?.key === question.answer) : -1;
+}
+
+// Source p328_1 contains FIVE options, top to bottom. The upstream four-way
+// crop merged A+B. Keep the original strip, never infer cuts from pixel gaps.
+const REVIEWED_GRAPH_ID = "graph-110";
+
+export function inspectCommunityQuestion(question) {
+  const issues = [];
+  if (!question || typeof question !== "object") return ["invalid-row"];
+  if (question.images !== undefined && (!Array.isArray(question.images) || question.images.some(path => typeof path !== "string"))) return ["invalid-images"];
+  const options = question.options;
+  if (typeof question.id !== "string" || !/^(verbal|data|graph)-\d+$/.test(question.id)) issues.push("invalid-id");
+  else if (!question.id.startsWith(`${question.sectionId}-`)) issues.push("id-section-mismatch");
+  if (question.explanation !== undefined && typeof question.explanation !== "string") issues.push("invalid-explanation");
+  if (!SECTION_CONFIG[question.sectionId]) issues.push("unknown-section");
+  if (typeof question.stem !== "string" || !question.stem.trim()) issues.push("missing-stem");
+  if (/<|>|data-v=/i.test(question.stem || "")) issues.push("markup-in-stem");
+  if (!Array.isArray(options) || options.length < 2 || options.length > 6) issues.push("invalid-options");
+  else {
+    if (options.some((option, index) => option?.key !== String.fromCharCode(65 + index))) issues.push("option-label-order");
+    if (options.some(option => !option || typeof option.text !== "string" || !option.text.trim())) issues.push("missing-option-text");
+    const contents = options.map(option => `${option?.text || ""}|${option?.image || ""}`.replace(/\s/g, ""));
+    if (new Set(contents).size !== contents.length) issues.push("duplicate-options");
+    if (question.optionsAreImages && options.some(option => typeof option?.image !== "string" || !option.image.trim())) issues.push("missing-option-image");
+    const paths = options.map(option => option?.image).filter(Boolean);
+    if (new Set(paths).size !== paths.length) issues.push("duplicate-option-image");
+    if (paths.some(path => (question.images || []).includes(path))) issues.push("stem-option-image-reused");
+  }
+  if (answerIndex(question) < 0) issues.push("invalid-answer");
+  const assets = [...(question.images || []), ...(Array.isArray(options) ? options.map(option => option?.image).filter(Boolean) : [])];
+  if (assets.some(path => typeof path !== "string" || !/^images\/[a-zA-Z0-9_\/-]+\.png$/.test(path) || path.includes(".."))) issues.push("invalid-asset-path");
+  if (question.id === REVIEWED_GRAPH_ID && (question.answer !== "A" || question.images?.join() !== "images/graph/p327_4_4882.png" || options?.length !== 4 || options.some((option, index) => option?.image !== `images/graph/options/graph-110_${String.fromCharCode(65 + index)}.png`))) issues.push("reviewed-source-changed");
+  if (AUDITED_CONTENT_EXCLUSIONS.has(question.id)) issues.push("known-content-defect");
+  if (question.sectionId === "data" && !hasQuestionImage(question)) issues.push("missing-chart");
+  if (question.sectionId === "graph" && !hasQuestionImage(question) && !/(不同|特殊)/.test(question.stem || "")) issues.push("missing-stimulus");
+  // Page-order allocation and inferred option counts are not source reviews.
+  if (["data", "graph"].includes(question.sectionId) && question.id !== REVIEWED_GRAPH_ID) issues.push("visual-source-review-pending");
+  return issues;
 }
 
 function optionContent(option = {}) {
@@ -83,9 +121,22 @@ function isCompleteCommunityQuestion(question, config, answer) {
 }
 
 function convertQuestion(question) {
+  if (inspectCommunityQuestion(question).length) return null;
   const config = SECTION_CONFIG[question.sectionId];
   const answer = answerIndex(question);
   if (!isCompleteCommunityQuestion(question, config, answer)) return null;
+
+  if (question.id === REVIEWED_GRAPH_ID) return {
+    id: "community-beisen-graph-110-reviewed-v2",
+    paperId: "community-beisen-bank",
+    source: "社区原图核对 · 原 PDF 第 327–328 页（非北森官方）",
+    sourceUrl: `${REPOSITORY_URL}/tree/${COMMIT}/public/images/graph`,
+    category: "graphic", subtype: "图形推理", difficulty: 3,
+    prompt: "接下来的图形应该是？第二张完整原图从上到下依次为 A、B、C、D、E，请按位置选择。",
+    options: ["A · 原图第 1 项", "B · 原图第 2 项", "C · 原图第 3 项", "D · 原图第 4 项", "E · 原图第 5 项"],
+    images: [assetUrl("images/graph/p327_4_4882.png"), assetUrl("images/graph/p328_1_4892.png")],
+    answer: 0, explanation: question.explanation.replace(/\s+/g, " ").trim(), expectedSeconds: 80,
+  };
 
   return {
     id: `community-beisen-${question.id}`,
@@ -117,14 +168,16 @@ export async function loadCommunityQuestionBank(existingQuestions = []) {
 
     const existingPrompts = new Set(existingQuestions.map((question) => normalizePrompt(question.prompt)));
     const seen = new Set();
+    const ids = new Set();
     return payload.questions
       .map(convertQuestion)
       .filter(Boolean)
       .filter((question) => {
         const promptKey = normalizePrompt(question.prompt);
         const key = exactQuestionKey(question);
-        if (!promptKey || existingPrompts.has(promptKey) || seen.has(key)) return false;
+        if (!promptKey || existingPrompts.has(promptKey) || seen.has(key) || ids.has(question.id)) return false;
         seen.add(key);
+        ids.add(question.id);
         return true;
       });
   } finally {
@@ -142,7 +195,7 @@ export function createCommunityPaper(questions) {
     id: "community-beisen-bank",
     title: `北森社区题库 · ${questions.length} 题`,
     provider: "GitHub 社区整理",
-    description: `言语 ${counts.verbal || 0}、资料 ${counts.data || 0}、图形 ${counts.graphic || 0}；已自动剔除缺图、缺选项、答案异常和题干串入解析的数据，每次随机抽取 40 题。非北森官方题库。`,
+    description: `言语 ${counts.verbal || 0}、资料 ${counts.data || 0}、图形 ${counts.graphic || 0}；未核对的社区图片题暂停出题，自动检查不代表内容全部正确。每次最多抽取 40 题。非北森官方题库。`,
     sourceUrl: REPOSITORY_URL,
     durationMinutes: 55,
     questionLimit: 40,

@@ -16,6 +16,7 @@
     "build:graphics": "node scripts/build-graphic-question-bank.mjs",
     "build:charts": "node scripts/build-data-chart-bank.mjs",
     "check:duplicates": "node scripts/check-question-duplicates.mjs",
+    "check:questions": "node scripts/audit-question-bank.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "devDependencies": {

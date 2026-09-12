@@ -35,6 +35,29 @@ function app(t, overrides = {}) {
   return { run:code=>vm.runInContext(code,context),writes };
 }
 
+test("question quarantine preserves history and excludes unavailable answers from submission", t => {
+  const { run } = app(t);
+  run(`saveState=()=>{}; render=()=>{}; window.scrollTo=()=>{};
+    state.practiceHistory=[]; state.wrongQuestionIds=['jd-supp-09'];
+    state.practiceSession={id:'audit',title:'audit',status:'active',startedAt:Date.now(),index:0,
+      questionIds:['jd-supp-09','official-hubei-2026-n-01'],answers:{'jd-supp-09':1,'official-hubei-2026-n-01':2}};`);
+  assert.match(run("renderPracticeSession()"), /1\/1 已作答/);
+  assert.match(run("renderPracticeSession()"), /不计入本次成绩/);
+  run("submitPractice()");
+  assert.equal(run("state.practiceHistory[0].results.length"), 1);
+  assert.equal(run("state.practiceHistory[0].results[0].correct"), true);
+  assert.equal(run("state.wrongQuestionIds.includes('jd-supp-09')"), true);
+  assert.match(run("renderWrongBook()"), /历史错题暂不可用/);
+});
+
+test("broken image questions are skipped for this visit without erasing attempts", t => {
+  const { run } = app(t);
+  assert.equal(run("Boolean(questionById('jd2-n-01'))"), true);
+  run("failedQuestionImageIds.add('jd2-n-01')");
+  assert.equal(run("Boolean(questionById('jd2-n-01'))"), false);
+  assert.match(run("renderQuestionImages(SEED_QUESTIONS.find(q=>q.id==='jd2-n-01'))"), /data-question-image="jd2-n-01"/);
+});
+
 test("sidebar toggles for guests without rerendering or cloud writes and restores browser preference", t => {
   const storage = new Map();
   const handlers = {};
