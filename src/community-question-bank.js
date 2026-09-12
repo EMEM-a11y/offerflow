@@ -6,7 +6,7 @@ const DATA_URL = `${CDN_ROOT}data/questions.json`;
 export const COMMUNITY_BANK_SOURCE = {
   title: "北森社区整理题库",
   repositoryUrl: REPOSITORY_URL,
-  note: "非北森官方题库；自动检查不等于题源核验，未核对的图片题暂停出题",
+  note: "非北森官方题库；持续核对题源，仅暂停已确认异常的题目",
 };
 
 const SECTION_CONFIG = {
@@ -121,7 +121,7 @@ function isCompleteCommunityQuestion(question, config, answer) {
 }
 
 function convertQuestion(question) {
-  if (inspectCommunityQuestion(question).length) return null;
+  if (inspectCommunityQuestion(question).some(issue => issue !== "visual-source-review-pending")) return null;
   const config = SECTION_CONFIG[question.sectionId];
   const answer = answerIndex(question);
   if (!isCompleteCommunityQuestion(question, config, answer)) return null;
@@ -195,7 +195,7 @@ export function createCommunityPaper(questions) {
     id: "community-beisen-bank",
     title: `北森社区题库 · ${questions.length} 题`,
     provider: "GitHub 社区整理",
-    description: `言语 ${counts.verbal || 0}、资料 ${counts.data || 0}、图形 ${counts.graphic || 0}；未核对的社区图片题暂停出题，自动检查不代表内容全部正确。每次最多抽取 40 题。非北森官方题库。`,
+    description: `言语 ${counts.verbal || 0}、资料 ${counts.data || 0}、图形 ${counts.graphic || 0}；题源持续核对中，仅暂停已确认异常的题目。每次最多抽取 40 题。非北森官方题库。`,
     sourceUrl: REPOSITORY_URL,
     durationMinutes: 55,
     questionLimit: 40,

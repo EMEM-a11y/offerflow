@@ -34,7 +34,7 @@ for (const question of SEED_QUESTIONS) {
 }
 const report = {
   sourceCommit: commit,
-  scope: "All bundled and pinned community rows; excludes private imports. Structural checks cover every row, not full semantic certification. Unreviewed community image questions are held.",
+  scope: "All bundled and pinned community rows; excludes private imports. Structural checks cover every row, not full semantic certification. Review-pending is informational and does not block practice.",
   total: rows.length, admitted: rows.filter(row => row.status === "admitted").length,
   held: rows.filter(row => row.status === "held").length,
   reasons: rows.flatMap(row => row.issues).reduce((counts, reason) => ({ ...counts, [reason]: (counts[reason] || 0) + 1 }), {}), rows,

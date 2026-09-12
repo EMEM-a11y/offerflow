@@ -17,10 +17,17 @@ test("five-choice original replaces incorrect crops with a new revision ID", asy
   assert.match(question.images[1], /p328_1_4892.png$/);
 });
 
-test("unreviewed visual sources and changed reviewed records fail closed", () => {
+test("review-pending is informational; changed reviewed records remain blocked", () => {
   assert.ok(inspectCommunityQuestion({ ...graph(), id: "graph-999" }).includes("visual-source-review-pending"));
   assert.ok(inspectCommunityQuestion({ ...graph(), id: "data-999", sectionId: "data" }).includes("visual-source-review-pending"));
   assert.ok(inspectCommunityQuestion({ ...graph(), answer: "B" }).includes("reviewed-source-changed"));
+});
+
+test("pending review alone never hides an otherwise usable question", async t => {
+  t.mock.method(globalThis, "fetch", async () => ({ ok: true, json: async () => ({ questions: [{ ...graph(), id: "graph-999" }] }) }));
+  const previous = globalThis.window; globalThis.window = globalThis;
+  t.after(() => { globalThis.window = previous; });
+  assert.equal((await loadCommunityQuestionBank()).length, 1);
 });
 
 test("missing repeated reordered and malformed image options are rejected", () => {
