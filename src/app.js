@@ -1406,7 +1406,7 @@ function renderPractice() {
   const activeTab = !hasPrivateAccess() && ["wrongbook", "stats"].includes(requestedTab) ? "overview" : requestedTab;
   return viewWrap("practice", `
     <div class="page-heading practice-heading">
-      <div><h1>北森职测训练</h1><p>共 ${questionBank().length} 道可练题${communityBankStatus === "loading" ? "，社区题库正在载入" : ""}${hasPrivateAccess() ? "" : "；登录可保存错题与成绩"}。</p></div>
+      <div><h1>北森职测训练</h1></div>
       <details class="compact-menu practice-import-actions"><summary>导入题库</summary><div class="compact-menu-body">
         <label class="btn" for="question-import">添加我的题库</label>
         <small>支持 JSON · <a href="${assetUrl("example-question-bank.json")}" download>下载模板</a> · 仅自己可见</small>
@@ -2607,7 +2607,7 @@ function renderPipeline() {
   const archivedCount = state.applications.filter(app => app.archivedAt).length;
   return viewWrap("pipeline", `
     <div class="page-heading pipeline-heading">
-      <div><h1>投递记录</h1><p>阶段表示当前环节；完成后可在环节状态中标记“已完成，待结果”。</p></div>
+      <div><h1>投递记录</h1></div>
       <div class="heading-actions"><button class="btn" data-action="export-applications">导出投递表</button><button class="btn primary" data-modal="quick-add">记录投递</button></div>
     </div>
     <div class="pipeline-controls">

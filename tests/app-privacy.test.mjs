@@ -123,6 +123,15 @@ test("pipeline counts current stages within archive scope, persists grouped filt
   assert.doesNotMatch(run('renderProcessStateCell(state.applications[0], record, state.jobs[0])'), /data-process-result/);
 });
 
+test("practice and pipeline headings omit subtitles while keeping their actions", async t => {
+  const { run } = app(t);
+  await run('applyCloudUser({id:"A"})');
+  assert.match(run('renderPractice()'), /<h1>北森职测训练<\/h1><\/div>/);
+  assert.match(run('renderPipeline()'), /<h1>投递记录<\/h1><\/div>/);
+  assert.match(run('renderPractice()'), /导入题库/);
+  assert.match(run('renderPipeline()'), /导出投递表/);
+});
+
 test("practice overview keeps recommendations in cards with labelled metrics and a mixed entry", async t => {
   const { run } = app(t);
   await run('applyCloudUser({id:"A"})');
