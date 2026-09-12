@@ -1,5 +1,5 @@
 /* Workspace layout. Keep shared typography and responsive page rules together. */
-:root { --text-xs: .8125rem; --text-sm: .875rem; --text-base: 1rem; --text-lg: 1.125rem; --page-title: 28px; --sidebar: 232px; --faint: #737379; }
+:root { --text-xs: .8125rem; --text-sm: .875rem; --text-base: 1rem; --text-lg: 1.125rem; --page-title: 28px; --sidebar: 232px; }
 body { font-size: var(--text-base); line-height: 1.55; }
 .content { max-width: 1640px; padding: 24px clamp(20px, 2.6vw, 40px) 40px; }
 .content h1 { font-size: var(--page-title); line-height: 1.3; font-weight: 700; letter-spacing: -.03em; }
@@ -143,7 +143,6 @@ textarea { resize: vertical; }
 .form-grid { gap: 20px; }
 .field label { font-size: var(--text-sm); }
 .field-help { line-height: 1.65; }
-@media (prefers-color-scheme: dark) { :root { --faint: #aeaeb2; } }
 @media (max-width: 1200px) {
   .radar-control-panel .radar-toolbar { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .home-main-grid, .resume-layout, .vault-layout, .draft-layout, .prep-workbench, .review-workbench, .interview-record-layout { grid-template-columns: 1fr; }
