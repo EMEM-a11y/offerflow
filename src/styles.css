@@ -620,9 +620,9 @@ button.radar-metric:active { transform: translateY(1px); }
 .record-summary-grid p, .review-preview p { margin: 8px 0 0; color: var(--muted); font-size: var(--text-xs); line-height: 1.6; }
 .review-preview { margin-top: 10px; padding: 14px; border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; background: var(--accent-soft); }
 .review-preview p { color: var(--accent-ink); }
-.review-workbench { display: grid; grid-template-columns: minmax(250px, .58fr) minmax(0, 1.42fr); gap: 14px; align-items: start; }
+.review-workbench { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; }
 .review-sidebar { position: sticky; top: 86px; }
-.review-record-picker { display: grid; gap: 6px; margin-top: 15px; }
+.review-record-picker { display: grid; gap: 6px; margin-top: 15px; max-height: 55vh; overflow-y: auto; }
 .review-record-picker button { border: 1px solid var(--line); border-radius: 9px; padding: 10px; background: transparent; text-align: left; cursor: pointer; display: grid; gap: 4px; }
 .review-record-picker button:hover { background: var(--panel-muted); }
 .review-record-picker button.active { border-color: var(--accent); background: var(--accent-soft); }
@@ -631,17 +631,21 @@ button.radar-metric:active { transform: translateY(1px); }
 .review-privacy { margin-top: 16px; padding: 12px; border-radius: 9px; background: var(--panel-muted); }
 .review-privacy strong { font-size: var(--text-xs); }
 .review-privacy p { color: var(--muted); font-size: var(--text-xs); line-height: 1.55; margin: 5px 0 0; }
-.review-form { display: grid; gap: 15px; }
+.review-form { display: grid; gap: 24px; min-width: 0; }
 .review-form-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
 .review-form-head span { color: var(--accent-ink); font-size: var(--text-xs); font-weight: 700; }
 .review-form-head h2 { margin: 5px 0 0; font-size: 21px; }
 .review-form .recording-box { margin-top: 0; }
-.review-two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.assistant-review-field { padding: 14px; border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); border-radius: 11px; background: var(--accent-soft); }
-.assistant-review-field textarea { background: var(--panel); }
-.review-result-row { display: grid; grid-template-columns: auto 180px 1fr; gap: 9px; align-items: center; }
+.review-field-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.review-text-field { min-width: 0; }
+.review-form textarea { min-height: 220px; padding: 16px; font-size: 16px; line-height: 1.75; resize: vertical; }
+.review-save-bar { position: sticky; bottom: 0; z-index: 3; padding: 12px 0; border-top: 1px solid var(--line); background: var(--panel-solid); }
+.review-save-feedback { margin: 0 0 8px; color: var(--muted); font-size: var(--text-sm); }
+.review-save-feedback:empty { display: none; }
+.review-result-row { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+.review-result-row select { width: auto; max-width: 100%; }
 .review-result-row label { color: var(--muted); font-size: var(--text-xs); }
-.review-result-row .btn { justify-self: end; }
+.review-result-row .btn { margin-left: auto; }
 .prep-workbench { display: grid; grid-template-columns: minmax(340px, .88fr) minmax(0, 1.12fr); gap: 14px; align-items: start; }
 .intro-editor { display: grid; gap: 15px; }
 .prep-editor-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 2px; }
@@ -1630,7 +1634,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   .pipeline-toolbar > span { grid-column: auto; }
   .pipeline-filter-menu summary { justify-content: center; }
   .pipeline-filter-popover { left: 0; right: auto; width: min(260px, calc(100vw - 48px)); }
-  .record-summary-grid, .review-two-cols, .project-proof, .record-status-editor { grid-template-columns: 1fr; }
+  .record-summary-grid, .project-proof, .record-status-editor { grid-template-columns: 1fr; }
   .recording-box.empty { grid-template-columns: 1fr; }
   .review-form-head, .prep-editor-head { flex-direction: column; }
   .review-result-row { grid-template-columns: 1fr; }

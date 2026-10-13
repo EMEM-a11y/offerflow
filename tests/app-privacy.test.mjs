@@ -35,6 +35,112 @@ function app(t, overrides = {}) {
   return { run:code=>vm.runInContext(code,context),writes };
 }
 
+const reviewValues = {
+  reviewRecordId: "review-test", questions: "问题一\n问题二", answerNotes: "长篇回答\n\n".repeat(1000),
+  strengths: "做得好的", improvements: "需要改进", assistantReview: "复盘结论 <保留原文>", nextActions: "练习表达", result: "waiting",
+};
+
+async function reviewApp(t, overrides = {}) {
+  const handlers = {};
+  const instance = app(t, {
+    document: { addEventListener: (type, handler) => { handlers[type] = handler; }, querySelector: () => null },
+    FormData: class { constructor(form) { return Object.entries(form.values); } },
+    ...overrides,
+  });
+  await instance.run('applyCloudUser({id:"A"})');
+  instance.run('state.interviewRecords=[{id:"review-test",company:"测试公司",role:"产品经理",round:"一面",date:"2026-10-14",questions:[],status:"scheduled",result:"pending"}];');
+  return { ...instance, submit: values => handlers.submit({ preventDefault() {}, target: { id: "interview-review-form", values } }) };
+}
+
+test("review form avoids named id collision and saves all long-form fields through actual submit handler", async t => {
+  const { run, writes, submit } = await reviewApp(t);
+  const html = run("renderInterviewReview()");
+  assert.match(html, /name="reviewRecordId"/);
+  assert.doesNotMatch(html, /name="id"/);
+  assert.equal((html.match(/data-expand-review=/g) || []).length, 6);
+  await submit(reviewValues);
+  assert.equal(writes.length, 1);
+  const saved = writes[0][1];
+  assert.deepEqual(Array.from(saved.interviewRecords[0].questions), ["问题一", "问题二"]);
+  for (const key of ["answerNotes", "strengths", "improvements", "assistantReview", "nextActions", "result"]) {
+    assert.equal(saved.interviewRecords[0][key], reviewValues[key]);
+  }
+  assert.equal(run("reviewSaveState.message"), "已保存到云端");
+  assert.equal(run("reviewDrafts.size"), 0);
+  run(`state=restoreState(${JSON.stringify(saved)});`);
+  assert.equal(run("state.interviewRecords[0].answerNotes"), reviewValues.answerNotes);
+  assert.match(run("renderInterviewReview()"), /复盘结论 &lt;保留原文&gt;/);
+});
+
+test("failed review save preserves draft and retries without reporting false success", async t => {
+  let fail = true;
+  const writes = [];
+  const { run, submit } = await reviewApp(t, { saveCloudWorkspace: async (...args) => {
+    if (fail) throw new Error("offline");
+    writes.push(args);
+    return { updated_at: "2" };
+  } });
+  await submit(reviewValues);
+  assert.match(run("reviewSaveState.message"), /保存未成功/);
+  assert.equal(run("reviewSaveState.busy"), false);
+  assert.equal(run('reviewDrafts.get("review-test").answerNotes'), reviewValues.answerNotes);
+  assert.match(run("renderInterviewReview()"), /保存未成功/);
+  fail = false;
+  await submit(reviewValues);
+  assert.equal(writes.length, 1);
+  assert.equal(run("reviewSaveState.message"), "已保存到云端");
+});
+
+test("save waits for confirmation and preserves edits made while saving", async t => {
+  let complete;
+  const { run, submit } = await reviewApp(t, { saveCloudWorkspace: () => new Promise(resolve => { complete = resolve; }) });
+  const saving = submit(reviewValues);
+  assert.equal(run("reviewSaveState.busy"), true);
+  assert.equal(run("reviewSaveState.message"), "正在保存到云端…");
+  run(`rememberReviewDraft({values:${JSON.stringify({ ...reviewValues, answerNotes: "保存过程中继续写的内容" })}});`);
+  complete({ updated_at: "2" });
+  await saving;
+  assert.equal(run("reviewSaveState.message"), "上次提交已保存，当前还有新修改");
+  assert.match(run("renderInterviewReview()"), /保存过程中继续写的内容/);
+  await run('applyCloudUser({id:"B"})');
+  assert.equal(run("reviewDrafts.size"), 0);
+});
+
+test("review draft survives navigation and warns before closing unsaved page", async t => {
+  const handlers = {};
+  const { run } = await reviewApp(t, { window: { addEventListener: (type, handler) => { handlers[type] = handler; } } });
+  run(`rememberReviewDraft({values:${JSON.stringify(reviewValues)}});`);
+  run('state.activeView="home"; render(); state.activeView="interview"; render();');
+  assert.match(run("renderInterviewReview()"), /有未保存的修改/);
+  assert.equal(run('reviewDrafts.get("review-test").answerNotes'), reviewValues.answerNotes);
+  let prevented = false;
+  handlers.beforeunload({ preventDefault() { prevented = true; } });
+  assert.equal(prevented, true);
+});
+
+test("review conflicts remain unsaved on retry and preserve the entered text", async t => {
+  let calls = 0;
+  const { run, submit } = await reviewApp(t, { saveCloudWorkspace: async () => {
+    calls++;
+    throw Object.assign(new Error("conflict"), { code: "WORKSPACE_CONFLICT" });
+  } });
+  await submit(reviewValues);
+  await submit(reviewValues);
+  assert.equal(calls, 1, "conflicting remote data must not be overwritten by a retry");
+  assert.match(run("reviewSaveState.message"), /云端已有其他更新，本次未保存/);
+  assert.equal(run('reviewDrafts.get("review-test").answerNotes'), reviewValues.answerNotes);
+});
+
+test("review save keeps linked application progress and notes in the same cloud write", async t => {
+  const { run, writes, submit } = await reviewApp(t);
+  run('state.jobs=[{id:"job",company:"测试公司",role:"产品经理"}]; state.applications=[{id:"application",jobId:"job",status:"interview_1"}]; state.interviewRecords[0].applicationId="application";');
+  await submit(reviewValues);
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0][1].applications[0].interviewRecordId, "review-test");
+  assert.equal(writes[0][1].applications[0].next, reviewValues.nextActions);
+  assert.equal(writes[0][1].interviewRecords[0].answerNotes, reviewValues.answerNotes);
+});
+
 test("question quarantine preserves history and excludes unavailable answers from submission", t => {
   const { run } = app(t);
   run(`saveState=()=>{}; render=()=>{}; window.scrollTo=()=>{};

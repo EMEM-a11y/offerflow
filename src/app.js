@@ -262,6 +262,8 @@ const workspaceSync = new WorkspaceSync({
 let toastTimer;
 let homeAgendaView = "pending";
 let pendingWorkspaceImport = null;
+const reviewDrafts = new Map();
+let reviewSaveState = { recordId: "", busy: false, message: "" };
 let radarJobs = [...FALLBACK_RADAR_JOBS];
 let radarSourceStatus = JOB_SOURCES.map(source => ({ ...source, state: "loading", count: 0, checkedAt: "" }));
 let radarLoading = true;
@@ -1234,6 +1236,7 @@ function render() {
     ${renderModal()}
   `;
   hydrateInterviewRecordings();
+  document.querySelectorAll("#interview-review-form textarea").forEach(resizeReviewField);
   updateLoginRequest();
   syncWorkspaceUi(document, previousFocus);
   if (state.activeView === "jobs" && state.jobView === "radar" && state.selectedRadarJob) {
@@ -2533,10 +2536,80 @@ function renderInterviewRecording(record) {
   return `<div class="recording-box"><div class="recording-meta"><span class="recording-icon">音</span><div><strong>${escapeHtml(record.recording.name)}</strong><p>${Math.max(1, Math.round((record.recording.size || 0) / 1024 / 1024 * 10) / 10)} MB · 本机保存</p></div></div><audio controls preload="metadata" data-recording-audio="${record.id}"></audio><div class="recording-actions"><button class="btn small" data-action="download-recording" data-record-id="${record.id}">下载备份</button><label class="btn small" for="audio-${record.id}">替换</label><input id="audio-${record.id}" type="file" accept="audio/*,.m4a,.mp3,.wav,.aac,.mp4" data-audio-upload="${record.id}" hidden><button class="btn small ghost danger" data-action="delete-recording" data-record-id="${record.id}">删除</button></div></div>`;
 }
 
+function renderReviewField(id, name, label, value, placeholder) {
+  return `<div class="field full review-text-field"><div class="review-field-heading"><label for="${id}">${label}</label><button type="button" class="text-action" data-expand-review="${id}" aria-controls="${id}" aria-expanded="false">展开全文</button></div><textarea id="${id}" name="${name}" rows="8" placeholder="${placeholder}">${escapeHtml(value || "")}</textarea></div>`;
+}
+
+function resizeReviewField(field) {
+  if (!field.offsetWidth) return;
+  field.style.height = "auto";
+  field.style.height = `${Math.max(220, Math.min(field.scrollHeight + 4, field.dataset.expanded === "true" ? Infinity : 560))}px`;
+}
+
+function rememberReviewDraft(form) {
+  if (!hasPrivateAccess()) return;
+  const values = Object.fromEntries(new FormData(form));
+  reviewDrafts.set(values.reviewRecordId, values);
+  if (!reviewSaveState.busy) reviewSaveState = { recordId: values.reviewRecordId, busy: false, message: "有未保存的修改" };
+  updateReviewSaveFeedback();
+  return values;
+}
+
+function updateReviewSaveFeedback() {
+  const form = document.querySelector("#interview-review-form");
+  if (!form || form.querySelector('[name="reviewRecordId"]').value !== reviewSaveState.recordId) return;
+  form.querySelector(".review-save-feedback").textContent = reviewSaveState.message;
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = reviewSaveState.busy;
+  button.textContent = reviewSaveState.busy ? "正在保存…" : "保存复盘";
+}
+
+async function saveInterviewReview(form) {
+  if (!hasPrivateAccess() || reviewSaveState.busy) return;
+  const epoch = authEpoch;
+  const data = rememberReviewDraft(form);
+  const record = state.interviewRecords.find(item => item.id === data.reviewRecordId);
+  if (!record) {
+    reviewSaveState = { recordId: data.reviewRecordId, busy: false, message: "未找到这条面试记录，请先复制内容留底，再重新选择记录。" };
+    updateReviewSaveFeedback();
+    return;
+  }
+  reviewSaveState = { recordId: record.id, busy: true, message: "正在保存到云端…" };
+  updateReviewSaveFeedback();
+  try {
+    record.questions = data.questions.split("\n").map(item => item.trim()).filter(Boolean);
+    for (const key of ["answerNotes", "strengths", "improvements", "assistantReview", "nextActions"]) record[key] = data[key];
+    record.result = data.result;
+    record.status = record.result === "pending" ? "scheduled" : "completed";
+    syncApplicationFromRecord(record);
+    state.tasks.interview = true;
+    workspaceSync.queue(state);
+    await workspaceSync.flush();
+    assertSession(epoch);
+    const newerEdits = reviewDrafts.get(record.id) !== data;
+    if (!newerEdits) reviewDrafts.delete(record.id);
+    reviewSaveState.message = newerEdits ? "上次提交已保存，当前还有新修改" : "已保存到云端";
+  } catch (error) {
+    if (epoch !== authEpoch) return;
+    reviewSaveState.message = error.code === "WORKSPACE_CONFLICT" || workspaceSync.blocked
+      ? "云端已有其他更新，本次未保存。输入内容仍在，请先复制留底，再重新载入云端记录。"
+      : "保存未成功，输入内容仍在。请检查网络或登录状态后重试。";
+  } finally {
+    if (epoch === authEpoch) {
+      reviewSaveState.busy = false;
+      updateReviewSaveFeedback();
+    }
+  }
+}
+
 function renderInterviewReview() {
   const record = selectedInterviewRecord();
   const records = interviewRecordsForFilters();
   if (!record) return `<div class="large-empty"><strong>这个筛选下没有可复盘记录</strong><p>清除筛选后可以查看全部笔面档案。</p><button class="btn primary" data-action="clear-interview-filters">查看全部记录</button></div>`;
+  const draft = reviewDrafts.get(record.id);
+  const values = draft || { ...record, questions: record.questions.join("\n") };
+  const saving = reviewSaveState.busy && reviewSaveState.recordId === record.id;
+  const feedback = reviewSaveState.recordId === record.id ? reviewSaveState.message : draft ? "有未保存的修改" : "";
   return `
     <div class="review-workbench">
       <aside class="panel pad review-sidebar">
@@ -2545,18 +2618,16 @@ function renderInterviewReview() {
         <div class="review-privacy"><strong>录音说明</strong><p>需要助手复盘时，将录音和问题发到对话中。</p></div>
       </aside>
       <form class="panel pad review-form" id="interview-review-form">
-        <input type="hidden" name="id" value="${record.id}">
+        <input type="hidden" name="reviewRecordId" value="${escapeHtml(record.id)}">
         <div class="review-form-head"><div><span>${escapeHtml(record.company)} · ${escapeHtml(record.round)}</span><h2>${escapeHtml(record.role)}</h2></div><button class="btn" type="button" data-action="copy-review-package" data-record-id="${record.id}">复制给助手复盘</button></div>
         ${renderInterviewRecording(record)}
-        <div class="field full"><label for="review-questions">面试问题</label><textarea id="review-questions" name="questions" rows="6" placeholder="每行记录一个你抽象出来的问题">${escapeHtml(record.questions.join("\n"))}</textarea></div>
-        <div class="field full"><label for="review-answers">回答与现场记录</label><textarea id="review-answers" name="answerNotes" rows="5" placeholder="记录自己的回答思路、面试官追问和现场反应">${escapeHtml(record.answerNotes)}</textarea></div>
-        <div class="review-two-cols">
-          <div class="field"><label for="review-strengths">做得好的</label><textarea id="review-strengths" name="strengths" placeholder="哪些表达和案例值得保留">${escapeHtml(record.strengths)}</textarea></div>
-          <div class="field"><label for="review-improvements">需要改进</label><textarea id="review-improvements" name="improvements" placeholder="下一次应该具体改变什么">${escapeHtml(record.improvements)}</textarea></div>
-        </div>
-        <div class="field full assistant-review-field"><label for="assistant-review">助手复盘结论</label><textarea id="assistant-review" name="assistantReview" rows="5" placeholder="粘贴助手提供的复盘结论、回答建议和共性问题">${escapeHtml(record.assistantReview)}</textarea></div>
-        <div class="field full"><label for="review-actions">下一步行动</label><textarea id="review-actions" name="nextActions" rows="3" placeholder="例如：重录自我介绍、补充量化结果、准备一道追问">${escapeHtml(record.nextActions)}</textarea></div>
-        <div class="review-result-row"><label for="review-result">环节结果</label><select id="review-result" name="result">${PROCESS_RESULT_OPTIONS.map(([value, label]) => `<option value="${value}" ${record.result === value ? "selected" : ""}>${label}</option>`).join("")}</select><button class="btn primary" type="submit">保存复盘</button></div>
+        ${renderReviewField("review-questions", "questions", "面试问题", values.questions, "每行记录一个问题，也可以粘贴完整的问题清单")}
+        ${renderReviewField("review-answers", "answerNotes", "回答与现场笔记", values.answerNotes, "粘贴面试记录、自己的回答或现场笔记")}
+        ${renderReviewField("review-strengths", "strengths", "做得好的", values.strengths, "值得保留的表达、案例和做法")}
+        ${renderReviewField("review-improvements", "improvements", "需要改进", values.improvements, "记录问题、原因和下次要做的调整")}
+        ${renderReviewField("assistant-review", "assistantReview", "助手复盘结论", values.assistantReview, "粘贴完整复盘结论和回答建议")}
+        ${renderReviewField("review-actions", "nextActions", "下一步行动", values.nextActions, "记录待准备的问题和具体行动")}
+        <div class="review-save-bar"><p class="review-save-feedback" role="status" aria-live="polite">${escapeHtml(feedback)}</p><div class="review-result-row"><label for="review-result">环节结果</label><select id="review-result" name="result">${PROCESS_RESULT_OPTIONS.map(([value, label]) => `<option value="${value}" ${values.result === value ? "selected" : ""}>${label}</option>`).join("")}</select><button class="btn primary" type="submit" ${saving ? "disabled" : ""}>${saving ? "正在保存…" : "保存复盘"}</button></div></div>
       </form>
     </div>
   `;
@@ -3276,6 +3347,15 @@ document.addEventListener("error", (event) => {
 }, true);
 
 document.addEventListener("click", (event) => {
+  const expandReview = event.target.closest("[data-expand-review]");
+  if (expandReview) {
+    const field = document.getElementById(expandReview.dataset.expandReview);
+    field.dataset.expanded = field.dataset.expanded === "true" ? "false" : "true";
+    expandReview.setAttribute("aria-expanded", field.dataset.expanded);
+    expandReview.textContent = field.dataset.expanded === "true" ? "收起全文" : "展开全文";
+    resizeReviewField(field);
+    return;
+  }
   if (event.target.closest("[data-radar-back]")) {
     closeMobileRadarDetail();
     return;
@@ -4321,6 +4401,12 @@ document.addEventListener("change", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  const reviewForm = event.target.closest?.("#interview-review-form");
+  if (reviewForm) {
+    rememberReviewDraft(reviewForm);
+    if (event.target.tagName === "TEXTAREA") resizeReviewField(event.target);
+    return;
+  }
   if (event.target.matches("[data-draft-field]") && !hasPrivateAccess()) return;
   if (event.target.matches("[data-draft-field]")) {
     const draft = state.applicationDrafts.find(item => item.id === state.activeApplicationDraft) || state.applicationDrafts[0];
@@ -4581,22 +4667,8 @@ document.addEventListener("submit", async (event) => {
     render();
   }
   if (event.target.id === "interview-review-form") {
-    const data = Object.fromEntries(new FormData(event.target));
-    const record = state.interviewRecords.find(item => item.id === data.id);
-    if (record) {
-      record.questions = data.questions.split("\n").map(item => item.trim()).filter(Boolean);
-      record.answerNotes = data.answerNotes.trim();
-      record.strengths = data.strengths.trim();
-      record.improvements = data.improvements.trim();
-      record.assistantReview = data.assistantReview.trim();
-      record.result = data.result;
-      record.status = record.result === "pending" ? "scheduled" : "completed";
-      record.nextActions = data.nextActions.trim() || processNextAction(record);
-      syncApplicationFromRecord(record);
-      state.tasks.interview = true;
-      saveState("面试复盘已保存");
-      render();
-    }
+    await saveInterviewReview(event.target);
+    return;
   }
   if (event.target.id === "interview-prep-form") {
     const data = Object.fromEntries(new FormData(event.target));
@@ -4651,13 +4723,15 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("beforeunload", event => {
-  if (!workspaceSync.pending) return;
+  if (!workspaceSync.pending && !reviewDrafts.size) return;
   event.preventDefault();
   event.returnValue = "";
 });
 
 async function applyCloudUser(user) {
   const epoch = ++authEpoch;
+  reviewDrafts.clear();
+  reviewSaveState = { recordId: "", busy: false, message: "" };
   workspaceSync.close();
   legacyMigrationNote = "";
   pendingWorkspaceImport = null;
